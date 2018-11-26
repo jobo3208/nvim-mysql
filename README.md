@@ -47,7 +47,8 @@ The easiest way to install is using
     $ cd nvim-mysql
     $ pip3 install -r requirements.txt
 
-Then start `nvim` and run `:UpdateRemotePlugins`.
+Then start `nvim` and run `:UpdateRemotePlugins`. You may have to restart
+Neovim before the plugin becomes accessible.
 
 You may also want to add the keybindings from `script/vimrc` to your
 personal `vimrc`.
