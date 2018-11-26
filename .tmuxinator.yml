@@ -1,0 +1,20 @@
+name: nvim-mysql
+tmux_command: tmux -2
+pre_window: . env/bin/activate
+windows:
+  - test:
+      layout: c325,199x50,0,0{118x50,0,0,0,80x50,119,0,3}
+      panes:
+        - NVIM_PYTHON_LOG_FILE=log NVIM_PYTHON_LOG_LEVEL=INFO nvim -u script/vimrc
+        - touch log_py3_rplugin && tail -F log_py3_rplugin
+  - interactive:
+      layout: even-horizontal
+      panes:
+        - nvim:
+            - rm -f nvim_interactive_socket
+            - NVIM_LISTEN_ADDRESS=nvim_interactive_socket nvim
+        - ipython:
+            - sleep 3
+            - ipython
+            - from pynvim import attach
+            - nvim = attach('socket', path='nvim_interactive_socket')

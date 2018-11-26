@@ -1,0 +1,6 @@
+.*.sw*
+*.pyc
+__pycache__
+env
+log_py3_*
+rplugin.vim
