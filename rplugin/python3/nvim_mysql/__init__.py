@@ -129,6 +129,7 @@ class MySQLTab(object):
             self.conn.close()
         self.server = server
         self.conn = pymysql.connect(server, read_default_file='~/.my.cnf')
+        self.conn.autocommit(True)
 
     def update_status(self, **kwargs):
         """Set one or more status flags for this tab.
