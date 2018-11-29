@@ -36,8 +36,8 @@ autocomplete.
 
 ## Installation
 
-nvim-mysql is a Python 3 remote plugin for Neovim -- Python 2 is not
-supported.
+nvim-mysql is a Python 3 remote plugin for Neovim. Currently Python 3.7+
+is required. Python 2 is not supported.
 
 The easiest way to install is using
 [vim-pathogen](https://github.com/tpope/vim-pathogen):
