@@ -55,6 +55,12 @@ def format_results(header, rows, types=None):
         # Return the value to display for one particular cell/value.
         if v is None:
             v = u'NULL'
+        elif isinstance(v, bytes):
+            try:
+                v = v.decode('utf-8')
+                v = ' '.join(v.splitlines())
+            except UnicodeDecodeError:
+                v = '0x' + v.hex()
         else:
             v = str(v)
             v = ' '.join(v.splitlines())
