@@ -354,10 +354,6 @@ class MySQL(object):
 
         # Set up autocomplete
         self.vim.command('set completefunc=MySQLComplete')
-        self.vim.command('setl completeopt=longest,menuone')
-        self.vim.command(r''':inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"''')
-        self.vim.command(r""":inoremap <expr> <C-n> pumvisible() ? '<C-n>' : '<C-n><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'""")
-        self.vim.command(r""":inoremap <expr> <C-x><C-u> pumvisible() ? '<C-x><C-u>' : '<C-x><C-u><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'""")
 
         self.refresh_tabline()
 
