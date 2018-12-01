@@ -36,6 +36,10 @@ DATE_TYPES = [
 ]
 
 
+class NvimMySQLError(Exception):
+    pass
+
+
 def format_results(header, rows, types=None):
     """Format query result set as an ASCII table.
 
@@ -247,13 +251,19 @@ class MySQL(object):
         This command assumes that all queries are separated by at least one
         blank line.
         """
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
         query = nvim_mysql.util.get_query_under_cursor(
             self.vim.current.buffer,
             self.vim.current.window.cursor[0] - 1,
             self.vim.current.window.cursor[1]
         )
-        tab = self.tabs[self.vim.current.tabpage]
-        tab.execute_query(query)
+        current_tab.execute_query(query)
 
     @pynvim.command('MySQLShowResults', nargs='?', sync=True)
     def show_results(self, args):
@@ -264,11 +274,16 @@ class MySQL(object):
 
         With no arguments, show the results no matter what.
         """
-        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
 
-        # If this isn't a MySQL tab, ignore.
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        called_by_user = len(args) == 0
         if current_tab is None:
-            return
+            if called_by_user:
+                raise NvimMySQLError("This is not a MySQL-connected tabpage")
+            else:
+                return
 
         # If we were called with a specific tab number and we're not in
         # that tab, ignore.
@@ -310,15 +325,16 @@ class MySQL(object):
         This command creates an additional connection to the server to
         kill the query.
         """
-        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
 
-        # If this isn't a MySQL tab, ignore.
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
         if current_tab is None:
-            return
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
 
         # If there's no running query, ignore.
         if not current_tab.status['executing']:
-            return
+            raise NvimMySQLError("No query is currently running in this tab")
 
         current_tab.update_status(killing=True)
         query_id = current_tab.conn.thread_id()
@@ -335,6 +351,9 @@ class MySQL(object):
 
     @pynvim.function('MySQLComplete', sync=True)
     def complete(self, args):
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
         current_tab = self.tabs.get(self.vim.current.tabpage, None)
 
         # If this isn't a MySQL tab, ignore.
