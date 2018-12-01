@@ -224,6 +224,13 @@ class MySQLTab(object):
     def complete(self, findstart, base):
         return nvim_mysql.autocomplete.complete(findstart, base, self.vim, self.conn.cursor())
 
+    def close(self):
+        try:
+            self.conn.close()
+        except:
+            pass
+        self.vim.command("bd! {}".format(self.results_buffer_name))
+
 
 @pynvim.plugin
 class MySQL(object):
@@ -365,6 +372,16 @@ class MySQL(object):
             return []
 
         return current_tab.complete(*args)
+
+    @pynvim.autocmd('TabClosed', eval='expand("<afile>")', sync=True)
+    def on_tabclosed(self, tab_num):
+        logger.debug("closing tab {}".format(tab_num))
+        tab_num = int(tab_num)
+        tab = [t for t in self.tabs if t.number == tab_num]
+        if tab:
+            tab = tab[0]
+            self.tabs[tab].close()
+            del self.tabs[tab]
 
     def _initialize(self):
         self.initialized = True

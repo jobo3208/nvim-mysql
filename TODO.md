@@ -45,6 +45,8 @@
   - ~~Autocomplete is case-insensitive for text you've already typed, but
     is case-sensitive for text entered after autocompletion has begun. It
     should be case-insensitive for both.~~
+  - ~~Connection and results buffer should be closed/removed when tabpage
+    is closed~~
 
 # Tests
 
