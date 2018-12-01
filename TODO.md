@@ -38,6 +38,7 @@
   - Custom tabline appears to remove/hide modified flag
 
   - ~~Second nvim instance freezes when trying to MySQLConnect~~
+  - ~~Can't MySQLConnect if buffer has been modified~~
 
 # Tests
 
