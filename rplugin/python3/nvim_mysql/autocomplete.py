@@ -39,7 +39,7 @@ def complete(findstart, base, vim, cursor):
             # Assume table
             logger.debug("autocomplete: assuming we're completing a TABLE")
             cursor.execute("show tables from `{}`".format(namespace))
-            return [r[0] for r in cursor.fetchall() if r[0].lower().startswith(base.lower())]
+            words = [r[0] for r in cursor.fetchall() if r[0].lower().startswith(base.lower())]
         else:
             # Assume column
             logger.debug("autocomplete: assuming we're completing a COLUMN")
@@ -56,4 +56,6 @@ def complete(findstart, base, vim, cursor):
                 table = namespace
             logger.debug("autocomplete: table: {}".format(table))
             cursor.execute("describe {}".format(table))
-            return [r[0] for r in cursor.fetchall() if r[0].lower().startswith(base.lower())]
+            words = [r[0] for r in cursor.fetchall() if r[0].lower().startswith(base.lower())]
+
+        return [{'word': w, 'icase': 1} for w in words]

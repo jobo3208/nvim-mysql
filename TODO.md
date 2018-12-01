@@ -42,6 +42,9 @@
   - ~~In results buffer, PgUp and PgDn go back to the start of the line~~
   - ~~In results buffer, cursor position doesn't reset when new query
     runs~~
+  - ~~Autocomplete is case-insensitive for text you've already typed, but
+    is case-sensitive for text entered after autocompletion has begun. It
+    should be case-insensitive for both.~~
 
 # Tests
 
