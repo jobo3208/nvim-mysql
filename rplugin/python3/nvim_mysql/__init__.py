@@ -116,7 +116,7 @@ class MySQLTab(object):
         # Set up
         results_buffer = list(self.vim.buffers)[-1]
         self.vim.command("b! {}".format(results_buffer.number))
-        self.vim.command("setl buftype=nofile bufhidden=hide nowrap nonu noswapfile")
+        self.vim.command("setl buftype=nofile bufhidden=hide nowrap nonu noswapfile nostartofline")
         self.vim.command("nnoremap <buffer> <S-Left> zH")
         self.vim.command("nnoremap <buffer> <S-Right> zL")
         self.vim.command("nnoremap <buffer> q :q<CR>")
