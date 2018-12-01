@@ -294,6 +294,9 @@ class MySQL(object):
         # If results are pending, update the contents of the buffer.
         if current_tab.status['results_pending']:
             current_tab.results_buffer[:] = current_tab.results
+
+            # Reset cursor position
+            self.vim.command("normal gg0")
         current_tab.update_status(results_pending=False)
 
         # If this was done automatically, switch back to wherever the user was.

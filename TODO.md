@@ -40,6 +40,8 @@
   - ~~Second nvim instance freezes when trying to MySQLConnect~~
   - ~~Can't MySQLConnect if buffer has been modified~~
   - ~~In results buffer, PgUp and PgDn go back to the start of the line~~
+  - ~~In results buffer, cursor position doesn't reset when new query
+    runs~~
 
 # Tests
 
