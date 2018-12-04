@@ -40,7 +40,7 @@ class NvimMySQLError(Exception):
     pass
 
 
-def format_results(header, rows, types=None):
+def results_to_table(header, rows, types=None):
     """Format query result set as an ASCII table.
 
     If a list of field types is provided (from cursor.description), type hints
@@ -86,6 +86,17 @@ def format_results(header, rows, types=None):
     ] + [table_row(r) for r in rows] + [
         horizontal_bar
     ]
+
+
+def format_results(results):
+    if results['type'] == 'read':
+        lines = results_to_table(results['header'], results['rows'], results['types'])
+        lines.extend(["", "{} row(s) in set".format(results['count'])])
+        return lines
+    elif results['type'] == 'write':
+        return ["", "{} row(s) affected".format(results['count'])]
+    elif results['type'] == 'error':
+        return results['message'].splitlines()
 
 
 class MySQLTab(object):
@@ -206,15 +217,14 @@ class MySQLTab(object):
         # Query is done.
         self.update_status(executing=False, killing=False)
         if error:
-            self.results = error[0].splitlines()
+            self.results = {'type': 'error', 'message': error[0]}
         elif not cursor.description:
-            self.results = ["", "{} row(s) affected".format(cursor.rowcount)]
+            self.results = {'type': 'write', 'count': cursor.rowcount}
         else:
             header = [f[0] for f in cursor.description]
             types = [f[1] for f in cursor.description]
             rows = cursor.fetchall()
-            self.results = format_results(header, rows, types)
-            self.results.extend(["", "{} row(s) in set".format(cursor.rowcount)])
+            self.results = {'type': 'read', 'header': header, 'types': types, 'rows': rows, 'count': cursor.rowcount}
 
         # TODO: Differentiate results pending from error pending?
         self.update_status(results_pending=True)
@@ -315,7 +325,7 @@ class MySQL(object):
 
         # If results are pending, update the contents of the buffer.
         if current_tab.status['results_pending']:
-            current_tab.results_buffer[:] = current_tab.results
+            current_tab.results_buffer[:] = format_results(current_tab.results)
 
             # Reset cursor position
             self.vim.command("normal gg0")
