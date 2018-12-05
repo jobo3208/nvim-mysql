@@ -1,4 +1,6 @@
 import asyncio
+import csv
+import io
 import logging
 import os
 
@@ -48,6 +50,7 @@ def results_to_table(header, rows, types=None):
 
     Return a list of strings.
     """
+    header = header[:]
     if types:
         for i, t in enumerate(types):
             if t in NUMERIC_TYPES:
@@ -88,11 +91,24 @@ def results_to_table(header, rows, types=None):
     ]
 
 
-def format_results(results):
+def results_to_csv(header, rows):
+    f = io.StringIO()
+    csv_out = csv.writer(f)
+    csv_out.writerow(header)
+    csv_out.writerows(rows)
+    return f.getvalue().splitlines()
+
+
+def format_results(results, format_='table'):
     if results['type'] == 'read':
-        lines = results_to_table(results['header'], results['rows'], results['types'])
-        lines.extend(["", "{} row(s) in set".format(results['count'])])
-        return lines
+        if format_ == 'table':
+            lines = results_to_table(results['header'], results['rows'], results['types'])
+            lines.extend(["", "{} row(s) in set".format(results['count'])])
+            return lines
+        elif format_ == 'csv':
+            return results_to_csv(results['header'], results['rows'])
+        else:
+            raise ValueError("Invalid results format '{}'".format(format_))
     elif results['type'] == 'write':
         return ["", "{} row(s) affected".format(results['count'])]
     elif results['type'] == 'error':
@@ -120,6 +136,7 @@ class MySQLTab(object):
         }
         self.results = []  # results from last query
         self.results_buffer = self._initialize_results_buffer()
+        self.results_format = None
 
     def _initialize_results_buffer(self):
         cur_buf = self.vim.current.buffer
@@ -229,7 +246,7 @@ class MySQLTab(object):
         # TODO: Differentiate results pending from error pending?
         self.update_status(results_pending=True)
 
-        self.vim.command('MySQLShowResults {}'.format(self.autoid))
+        self.vim.command('MySQLShowResults table {}'.format(self.autoid))
 
     def complete(self, findstart, base):
         return nvim_mysql.autocomplete.complete(findstart, base, self.vim, self.conn.cursor())
@@ -282,33 +299,49 @@ class MySQL(object):
         )
         current_tab.execute_query(query)
 
-    @pynvim.command('MySQLShowResults', nargs='?', sync=True)
+    @pynvim.command('MySQLShowResults', nargs='*', sync=True)
     def show_results(self, args):
         """Display the results buffer.
 
-        With a single argument, only show the results if we are currently in
-        the MySQLTab with the given autoid.
+        :MySQLShowResults <format> <tab_autoid>
 
-        With no arguments, show the results no matter what.
+        Both arguments are optional, but format must be specified if tab_autoid
+        is specified.
+
+        format can be one of 'table' (the default) or 'csv'.
+
+        If tab_autoid is specified, only show the results if we are currently
+        in the MySQLTab with the given autoid. If tab_autoid is not specified,
+        show the results no matter what.
         """
         if not self.initialized:
             raise NvimMySQLError("Use MySQLConnect to connect to a database first")
 
+        logger.debug("show_results args: {}".format(args))
+
+        if len(args) > 1:
+            tab_autoid = int(args[1])
+        else:
+            tab_autoid = None
+
+        if len(args) > 0:
+            format_ = args[0]
+            if format_ not in ['table', 'csv']:
+                raise NvimMySQLError("Invalid results format '{}'".format(format_))
+        else:
+            format_ = 'table'
+
         current_tab = self.tabs.get(self.vim.current.tabpage, None)
-        called_by_user = len(args) == 0
         if current_tab is None:
-            if called_by_user:
+            if tab_autoid is None:
                 raise NvimMySQLError("This is not a MySQL-connected tabpage")
             else:
                 return
 
         # If we were called with a specific tab number and we're not in
         # that tab, ignore.
-        if args:
-            # Only show results if we're in the specified tab.
-            tab_id = int(args[0])
-            if current_tab.autoid != tab_id:
-                return
+        if tab_autoid is not None and tab_autoid != current_tab.autoid:
+            return
 
         # If results buffer is already open, jump to it.
         results_buffer_windows = [(i, w) for (i, w) in enumerate(
@@ -323,16 +356,15 @@ class MySQL(object):
             logger.debug("split command: {}".format(split_command))
             self.vim.command(split_command)
 
-        # If results are pending, update the contents of the buffer.
-        if current_tab.status['results_pending']:
-            current_tab.results_buffer[:] = format_results(current_tab.results)
-
-            # Reset cursor position
+        if current_tab.status['results_pending'] or format_ != self.results_format:
+            current_tab.results_buffer[:] = format_results(current_tab.results, format_)
+            self.results_format = format_
             self.vim.command("normal gg0")
+
         current_tab.update_status(results_pending=False)
 
         # If this was done automatically, switch back to wherever the user was.
-        if args:
+        if tab_autoid is not None:
             self.vim.command('wincmd p')
 
     @pynvim.command('MySQLKillQuery', sync=True)

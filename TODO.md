@@ -7,7 +7,6 @@
   
 # Features
 
-  - Change format of results buffer (ASCII table, CSV, etc.)
   - Freeze panes in results buffer
   - Smoother autocomplete experience
       - Support Home and End keys in autocomplete menu
@@ -15,6 +14,8 @@
       - Change search direction for autocomplete?
   - Allow running a series of queries
   - Shortcuts (e.g. copy a table) (maybe better implemented as snippets?)
+
+  - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
 
 # Meta
 
