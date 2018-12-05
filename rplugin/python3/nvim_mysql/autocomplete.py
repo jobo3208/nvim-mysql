@@ -20,6 +20,31 @@ def get_table_aliases(query):
     return aliases
 
 
+def get_namespace(line_segment):
+    """Extract the namespace (database name or table alias) from line_segment.
+
+    >>> get_namespace("from Person.a")
+    'Person'
+    >>> get_namespace("where x.na")
+    'x'
+    >>> get_namespace("where x.name = y.n")
+    'y'
+    >>> get_namespace("where length(x.na")
+    'x'
+    >>> get_namespace("where length(x.name) = length(x2.n")
+    'x2'
+    """
+    end = line_segment.rindex('.')
+    start = -1
+    for char in ' (':
+        loc = line_segment.rfind(char)
+        if loc > start:
+            start = loc
+    if start == -1:
+        raise ValueError("Invalid location for autocomplete")
+    return line_segment[start+1:end]
+
+
 def complete(findstart, base, vim, cursor):
     cursor.execute("show databases")
     databases = [r[0] for r in cursor.fetchall()]
@@ -33,7 +58,7 @@ def complete(findstart, base, vim, cursor):
     else:
         logger.debug('autocomplete: base: "{}"'.format(base))
         logger.debug('autocomplete: line segment is "{}"'.format(line_segment))
-        namespace = line_segment[line_segment.rindex(' ') + 1:line_segment.rindex('.')]  # TODO: make more robust
+        namespace = get_namespace(line_segment)
         logger.debug('autocomplete: namespace is "{}"'.format(namespace))
         if namespace in databases:
             # Assume table

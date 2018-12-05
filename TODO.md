@@ -49,6 +49,8 @@
   - ~~Connection and results buffer should be closed/removed when tabpage
     is closed~~
   - ~~Results buffer gets messed up if autochdir option is on~~
+  - ~~Autocomplete fails if column alias is preceded by '(' (as in a function
+    call)~~
 
 # Tests
 
