@@ -48,6 +48,7 @@
     should be case-insensitive for both.~~
   - ~~Connection and results buffer should be closed/removed when tabpage
     is closed~~
+  - ~~Results buffer gets messed up if autochdir option is on~~
 
 # Tests
 

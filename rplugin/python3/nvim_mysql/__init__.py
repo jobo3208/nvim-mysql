@@ -352,9 +352,10 @@ class MySQL(object):
         else:
             # If not, open it.
             result_win_height = int(self.vim.current.window.height * 0.35)
-            split_command = "{}sp {}".format(result_win_height, current_tab.results_buffer_name)
+            split_command = "{}sp".format(result_win_height)
             logger.debug("split command: {}".format(split_command))
             self.vim.command(split_command)
+            self.vim.command("b! {}".format(current_tab.results_buffer.number))
 
         if current_tab.status['results_pending'] or format_ != self.results_format:
             current_tab.results_buffer[:] = format_results(current_tab.results, format_)
