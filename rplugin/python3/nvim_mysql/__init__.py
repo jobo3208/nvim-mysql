@@ -156,8 +156,6 @@ class MySQLTab(object):
         # Switch back
         self.vim.command("b! {}".format(cur_buf.number))
 
-        self.results_buffer_name = buf_name
-
         return results_buffer
 
     def connect(self, server):
@@ -256,7 +254,7 @@ class MySQLTab(object):
             self.conn.close()
         except:
             pass
-        self.vim.command("bd! {}".format(self.results_buffer_name))
+        self.vim.command("bd! {}".format(self.results_buffer.number))
 
 
 @pynvim.plugin
