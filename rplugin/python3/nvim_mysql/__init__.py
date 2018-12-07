@@ -158,14 +158,16 @@ class MySQLTab(object):
 
         return results_buffer
 
-    def connect(self, server):
-        """Create a database connection for this tab to the given server."""
-        self.tabpage.vars['MySQLServer'] = server
+    def set_connection(self, conn, server):
+        """Set this MySQL tab's database connection to conn.
+
+        server is the server name.
+        """
         if self.conn:
             self.conn.close()
+        self.conn = conn
         self.server = server
-        self.conn = pymysql.connect(server, read_default_file='~/.my.cnf')
-        self.conn.autocommit(True)
+        self.tabpage.vars['MySQLServer'] = server
 
     def update_status(self, **kwargs):
         """Set one or more status flags for this tab.
@@ -269,12 +271,25 @@ class MySQL(object):
     @pynvim.command('MySQLConnect', nargs=1, sync=True)
     def connect(self, args):
         """Activate MySQL with a connection to the given server in the current tabpage."""
+        server = args[0]
+        logger.debug("connecting to {}".format(server))
+        conn = pymysql.connect(server, read_default_file='~/.my.cnf')
+        conn.autocommit(True)
+        logger.debug("connection succeeded")
+
         tabpage = self.vim.current.tabpage
-        tab = self.tabs[tabpage] = MySQLTab(self, self.vim, tabpage)
-        tab.connect(args[0])
+        if tabpage in self.tabs:
+            logger.debug("this tab is already MySQL-connected, will replace connection")
+            tab = self.tabs[tabpage]
+        else:
+            logger.debug("this tab is not MySQL-connected, will initialize")
+            tab = self.tabs[tabpage] = MySQLTab(self, self.vim, tabpage)
+        tab.set_connection(conn, server)
 
         if not self.initialized:
             self._initialize()
+
+        self.refresh_tabline()
 
     @pynvim.command('MySQLExecQueryUnderCursor', sync=False)
     def exec_query_under_cursor(self):
