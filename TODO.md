@@ -16,6 +16,7 @@
   - Shortcuts (e.g. copy a table) (maybe better implemented as snippets?)
 
   - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
+  - ~~Shortcuts for describing and sampling a table~~
 
 # Meta
 
