@@ -8,12 +8,13 @@
 # Features
 
   - Freeze panes in results buffer
-  - Smoother autocomplete experience
-      - Support Home and End keys in autocomplete menu
-      - Choose top option by default?
-      - Change search direction for autocomplete?
+  - Support Home and End keys in autocomplete menu
   - Allow running a series of queries
   - Shortcuts (e.g. copy a table) (maybe better implemented as snippets?)
+  - When autocompleting a name with spaces in it, wrap in backticks
+  - Query log
+  - More query metadata in results buffer (e.g. execution time, dimensions
+    of result set)
 
   - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
   - ~~Shortcuts for describing and sampling a table~~
@@ -38,6 +39,7 @@
 
   - Keybindings should be limited to MySQL-connected buffers
   - Custom tabline appears to remove/hide modified flag
+  - Visual selection is lost if MySQLShowResults is called during
 
   - ~~Second nvim instance freezes when trying to MySQLConnect~~
   - ~~Can't MySQLConnect if buffer has been modified~~
