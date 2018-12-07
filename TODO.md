@@ -51,6 +51,7 @@
   - ~~Results buffer gets messed up if autochdir option is on~~
   - ~~Autocomplete fails if column alias is preceded by '(' (as in a function
     call)~~
+  - ~~Tabs get messed up when you close a tab between two MySQL tabs~~
 
 # Tests
 

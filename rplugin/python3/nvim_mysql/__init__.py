@@ -414,15 +414,9 @@ class MySQL(object):
 
         return current_tab.complete(*args)
 
-    @pynvim.autocmd('TabClosed', eval='expand("<afile>")', sync=True)
-    def on_tabclosed(self, tab_num):
-        logger.debug("closing tab {}".format(tab_num))
-        tab_num = int(tab_num)
-        tab = [t for t in self.tabs if t.number == tab_num]
-        if tab:
-            tab = tab[0]
-            self.tabs[tab].close()
-            del self.tabs[tab]
+    @pynvim.autocmd('TabClosed', sync=True)
+    def on_tabclosed(self):
+        self.cleanup_tabs()
 
     def _initialize(self):
         self.initialized = True
@@ -436,3 +430,11 @@ class MySQL(object):
 
     def refresh_tabline(self):
         self.vim.command('set showtabline=2 tabline=%!MySQLTabLine()')
+
+    def cleanup_tabs(self):
+        logger.debug("number of open tabs: {}".format(len(self.vim.tabpages)))
+        for nvim_tab, mysql_tab in list(self.tabs.items()):
+            if nvim_tab not in self.vim.tabpages:
+                logger.debug("tab w/ handle {} is not longer open. closing.".format(nvim_tab.handle))
+                mysql_tab.close()
+                del self.tabs[nvim_tab]
