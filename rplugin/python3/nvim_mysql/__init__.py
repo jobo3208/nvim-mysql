@@ -312,6 +312,81 @@ class MySQL(object):
         )
         current_tab.execute_query(query)
 
+    @pynvim.command('MySQLDescribeTableUnderCursor', sync=False)
+    def describe_table_under_cursor(self):
+        """Describe the table under the cursor."""
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        word = nvim_mysql.util.get_word_under_cursor(
+            self.vim.current.buffer,
+            self.vim.current.window.cursor[0] - 1,
+            self.vim.current.window.cursor[1]
+        )
+        table = nvim_mysql.util.word_to_table(word)
+        if nvim_mysql.util.table_exists(current_tab.conn, table):
+            query = "describe {}".format(table)
+            current_tab.execute_query(query)
+        else:
+            raise NvimMySQLError("Table '{}' does not exist".format(table))
+
+    @pynvim.command('MySQLSampleTableUnderCursor', sync=False)
+    def sample_table_under_cursor(self):
+        """Select a sampling of rows from the table under the cursor."""
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        word = nvim_mysql.util.get_word_under_cursor(
+            self.vim.current.buffer,
+            self.vim.current.window.cursor[0] - 1,
+            self.vim.current.window.cursor[1]
+        )
+        table = nvim_mysql.util.word_to_table(word)
+        if nvim_mysql.util.table_exists(current_tab.conn, table):
+            query = "select * from {} limit 100".format(table)
+            current_tab.execute_query(query)
+        else:
+            raise NvimMySQLError("Table '{}' does not exist".format(table))
+
+    @pynvim.command('MySQLKillQuery', sync=True)
+    def kill_query(self):
+        """Kill the query currently executing in the current tabpage.
+
+        This command creates an additional connection to the server to
+        kill the query.
+        """
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        # If there's no running query, ignore.
+        if not current_tab.status['executing']:
+            raise NvimMySQLError("No query is currently running in this tab")
+
+        current_tab.update_status(killing=True)
+        query_id = current_tab.conn.thread_id()
+        logger.debug("thread id: {}".format(query_id))
+
+        conn = pymysql.connect(current_tab.server, read_default_file='~/.my.cnf')
+        try:
+            cursor = conn.cursor()
+            cursor.execute("kill query {}".format(query_id))
+        finally:
+            conn.close()
+
+        logger.debug("done killing query")
+
     @pynvim.command('MySQLShowResults', nargs='*', sync=True)
     def show_results(self, args):
         """Display the results buffer.
@@ -381,81 +456,6 @@ class MySQL(object):
         if tab_autoid is not None:
             self.vim.command('wincmd p')
 
-    @pynvim.command('MySQLKillQuery', sync=True)
-    def kill_query(self):
-        """Kill the query currently executing in the current tabpage.
-
-        This command creates an additional connection to the server to
-        kill the query.
-        """
-        if not self.initialized:
-            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
-
-        current_tab = self.tabs.get(self.vim.current.tabpage, None)
-        if current_tab is None:
-            raise NvimMySQLError("This is not a MySQL-connected tabpage")
-
-        # If there's no running query, ignore.
-        if not current_tab.status['executing']:
-            raise NvimMySQLError("No query is currently running in this tab")
-
-        current_tab.update_status(killing=True)
-        query_id = current_tab.conn.thread_id()
-        logger.debug("thread id: {}".format(query_id))
-
-        conn = pymysql.connect(current_tab.server, read_default_file='~/.my.cnf')
-        try:
-            cursor = conn.cursor()
-            cursor.execute("kill query {}".format(query_id))
-        finally:
-            conn.close()
-
-        logger.debug("done killing query")
-
-    @pynvim.command('MySQLDescribeTableUnderCursor', sync=False)
-    def describe_table_under_cursor(self):
-        """Describe the table under the cursor."""
-        if not self.initialized:
-            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
-
-        current_tab = self.tabs.get(self.vim.current.tabpage, None)
-        if current_tab is None:
-            raise NvimMySQLError("This is not a MySQL-connected tabpage")
-
-        word = nvim_mysql.util.get_word_under_cursor(
-            self.vim.current.buffer,
-            self.vim.current.window.cursor[0] - 1,
-            self.vim.current.window.cursor[1]
-        )
-        table = nvim_mysql.util.word_to_table(word)
-        if nvim_mysql.util.table_exists(current_tab.conn, table):
-            query = "describe {}".format(table)
-            current_tab.execute_query(query)
-        else:
-            raise NvimMySQLError("Table '{}' does not exist".format(table))
-
-    @pynvim.command('MySQLSampleTableUnderCursor', sync=False)
-    def sample_table_under_cursor(self):
-        """Select a sampling of rows from the table under the cursor."""
-        if not self.initialized:
-            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
-
-        current_tab = self.tabs.get(self.vim.current.tabpage, None)
-        if current_tab is None:
-            raise NvimMySQLError("This is not a MySQL-connected tabpage")
-
-        word = nvim_mysql.util.get_word_under_cursor(
-            self.vim.current.buffer,
-            self.vim.current.window.cursor[0] - 1,
-            self.vim.current.window.cursor[1]
-        )
-        table = nvim_mysql.util.word_to_table(word)
-        if nvim_mysql.util.table_exists(current_tab.conn, table):
-            query = "select * from {} limit 100".format(table)
-            current_tab.execute_query(query)
-        else:
-            raise NvimMySQLError("Table '{}' does not exist".format(table))
-
     @pynvim.function('MySQLComplete', sync=True)
     def complete(self, args):
         if not self.initialized:
@@ -477,6 +477,14 @@ class MySQL(object):
     def on_tabclosed(self):
         self.cleanup_tabs()
 
+    def cleanup_tabs(self):
+        logger.debug("number of open tabs: {}".format(len(self.vim.tabpages)))
+        for nvim_tab, mysql_tab in list(self.tabs.items()):
+            if nvim_tab not in self.vim.tabpages:
+                logger.debug("tab w/ handle {} is not longer open. closing.".format(nvim_tab.handle))
+                mysql_tab.close()
+                del self.tabs[nvim_tab]
+
     def _initialize(self):
         self.initialized = True
         tabline_file = os.path.join(os.path.dirname(__file__), 'tabline.vim')
@@ -489,11 +497,3 @@ class MySQL(object):
 
     def refresh_tabline(self):
         self.vim.command('set showtabline=2 tabline=%!MySQLTabLine()')
-
-    def cleanup_tabs(self):
-        logger.debug("number of open tabs: {}".format(len(self.vim.tabpages)))
-        for nvim_tab, mysql_tab in list(self.tabs.items()):
-            if nvim_tab not in self.vim.tabpages:
-                logger.debug("tab w/ handle {} is not longer open. closing.".format(nvim_tab.handle))
-                mysql_tab.close()
-                del self.tabs[nvim_tab]
