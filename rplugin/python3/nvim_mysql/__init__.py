@@ -152,6 +152,7 @@ class MySQLTab(object):
         self.vim.command("nnoremap <buffer> <S-Left> zH")
         self.vim.command("nnoremap <buffer> <S-Right> zL")
         self.vim.command("nnoremap <buffer> q :q<CR>")
+        self.vim.command("nnoremap <buffer> <Leader>c :MySQLShowResults csv<CR>")
 
         # Switch back
         self.vim.command("b! {}".format(cur_buf.number))
