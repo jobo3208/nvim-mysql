@@ -7,7 +7,6 @@
   
 # Features
 
-  - Freeze panes in results buffer
   - Support Home and End keys in autocomplete menu
   - Allow running a series of queries
   - Shortcuts (e.g. copy a table) (maybe better implemented as snippets?)
@@ -18,6 +17,7 @@
 
   - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
   - ~~Shortcuts for describing and sampling a table~~
+  - ~~Freeze panes in results buffer~~
 
 # Meta
 

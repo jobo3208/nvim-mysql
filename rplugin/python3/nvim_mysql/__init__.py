@@ -153,6 +153,7 @@ class MySQLTab(object):
         self.vim.command("nnoremap <buffer> <S-Right> zL")
         self.vim.command("nnoremap <buffer> q :q<CR>")
         self.vim.command("nnoremap <buffer> <Leader>c :MySQLShowResults csv<CR>")
+        self.vim.command("nnoremap <buffer> <Leader>f :MySQLFreezeResultsHeader<CR>")
 
         # Switch back
         self.vim.command("b! {}".format(cur_buf.number))
@@ -459,6 +460,20 @@ class MySQL(object):
         # If this was done automatically, switch back to wherever the user was.
         if tab_autoid is not None:
             self.vim.command('wincmd p')
+
+    @pynvim.command('MySQLFreezeResultsHeader', sync=True)
+    def freeze_results_header(self):
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        if current_tab.results_buffer != self.vim.current.buffer:
+            raise NvimMySQLError("This command can only be run in results buffer")
+
+        self.vim.feedkeys(""":=winheight('%')-4spL3jH^:se scbk:se scb:se sbo=horj""")
 
     @pynvim.function('MySQLComplete', sync=True)
     def complete(self, args):
