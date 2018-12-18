@@ -4,6 +4,7 @@ import io
 import logging
 import os
 
+import cxnstr
 import greenlet
 import pymysql
 import pymysql.constants.FIELD_TYPE as FT
@@ -272,10 +273,12 @@ class MySQL(object):
 
     @pynvim.command('MySQLConnect', nargs=1, sync=True)
     def connect(self, args):
-        """Activate MySQL with a connection to the given server in the current tabpage."""
-        server = args[0]
-        logger.debug("connecting to {}".format(server))
-        conn = pymysql.connect(server, read_default_file='~/.my.cnf')
+        """Use the given connection_string to connect the current tabpage to a MySQL server."""
+        connection_string = args[0]
+        db_params = cxnstr.to_dict(connection_string)
+        server = db_params['host']
+        logger.debug("connecting to {}".format(connection_string))
+        conn = pymysql.connect(**db_params)
         conn.autocommit(True)
         logger.debug("connection succeeded")
 
