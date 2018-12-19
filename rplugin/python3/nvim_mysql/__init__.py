@@ -476,7 +476,7 @@ class MySQL(object):
         if current_tab.results_buffer != self.vim.current.buffer:
             raise NvimMySQLError("This command can only be run in results buffer")
 
-        self.vim.feedkeys(""":=winheight('%')-4spL3jH^:se scbk:se scb:se sbo=horj""")
+        self.vim.feedkeys("""gg^:=winheight('%')-4spL3jH^:se scbk:se scb:se sbo=horj""")
 
     @pynvim.function('MySQLComplete', sync=True)
     def complete(self, args):
