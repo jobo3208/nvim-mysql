@@ -291,7 +291,7 @@ class MySQL(object):
             tab = self.tabs[tabpage] = MySQLTab(self, self.vim, tabpage)
         tab.set_connection(conn, server)
 
-        if 'current_syntax' not in self.vim.current.buffer.vars:
+        if self.vim.current.buffer.name == '' and 'current_syntax' not in self.vim.current.buffer.vars:
             self.vim.command('set ft=mysql')
 
         if not self.initialized:

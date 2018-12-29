@@ -58,6 +58,8 @@
   - ~~Tabs get messed up when you close a tab between two MySQL tabs~~
   - ~~Tab becomes MySQL-enabled even if connection to database fails~~
   - ~~Can't sample or describe table name in backticks~~
+  - ~~If you MySQLConnect from the results buffer (e.g. if connection expires),
+    it will set ft=mysql~~
 
 # Tests
 
