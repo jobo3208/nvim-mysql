@@ -65,3 +65,7 @@ You can also use [tmuxinator](https://github.com/tmuxinator/tmuxinator)
 with the provided `.tmuxinator.yml` file. This will give you a Neovim
 editor in the first tab with logs, and a Neovim editor in the second tab
 with a connected IPython shell (useful for experimenting with the API).
+
+## Tests
+
+Run the tests with `pytest`.
