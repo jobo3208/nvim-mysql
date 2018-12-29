@@ -57,6 +57,7 @@
     call)~~
   - ~~Tabs get messed up when you close a tab between two MySQL tabs~~
   - ~~Tab becomes MySQL-enabled even if connection to database fails~~
+  - ~~Can't sample or describe table name in backticks~~
 
 # Tests
 

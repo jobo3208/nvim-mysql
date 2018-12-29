@@ -55,20 +55,56 @@ def word_to_table(word):
     return word.rstrip(',;')
 
 
+class Table(object):
+    """Object for representing a MySQL table and properly formatting it.
+
+    Any of these work:
+
+    >>> t = Table('table')
+    >>> t = Table('db.table')
+    >>> t = Table('`db`.`table`')
+    >>> t = Table('db', 'table')
+
+    Usage:
+
+    >>> t = Table('db.table')
+    >>> t.db
+    'db'
+    >>> t.table
+    'table'
+    >>> print(t)
+    `db`.`table`
+    """
+    def __init__(self, *args):
+        args = [a.replace('`', '') for a in args]
+        if len(args) == 1:
+            if '.' in args[0]:
+                self.db, self.table = args[0].split('.')
+            else:
+                self.db, self.table = None, args[0]
+        elif len(args) == 2:
+            self.db, self.table = args
+        else:
+            raise ValueError('too many arguments')
+
+    def __str__(self):
+        if self.db:
+            return '`{0}`.`{1}`'.format(self.db, self.table)
+        else:
+            return '`{0}`'.format(self.table)
+
+
 def table_exists(conn, table):
-    if '.' in table:
-        db, table = table.split('.')
-    else:
-        db = None
+    t = Table(table)
     cursor = conn.cursor()
-    if db is not None:
+    if t.db is not None:
         cursor.execute("show databases")
         databases = {r[0] for r in cursor.fetchall()}
-        if db in databases:
-            cursor.execute("show tables from `{}`".format(db))
+        if t.db in databases:
+            cursor.execute("show tables from `{}`".format(t.db))
         else:
             return False
     else:
         cursor.execute("show tables")
     tables = {r[0] for r in cursor.fetchall()}
-    return table in tables
+    return t.table in tables
