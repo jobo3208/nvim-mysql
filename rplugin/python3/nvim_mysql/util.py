@@ -3,28 +3,29 @@ import re
 
 
 def get_query_under_cursor(buffer, row, col):
-    r"""
+    r"""Return (query, row_in_query).
+
     >>> buf = ['select count(*)', 'from test;']
     >>> get_query_under_cursor(buf, 0, 0)
-    'select count(*)\nfrom test;'
+    ('select count(*)\nfrom test;', 0)
     >>> buf = ['select count(*) from test;', '', 'select count(*) from blah;']
     >>> get_query_under_cursor(buf, 0, 3)
-    'select count(*) from test;'
+    ('select count(*) from test;', 0)
     >>> get_query_under_cursor(buf, 2, 1)
-    'select count(*) from blah;'
+    ('select count(*) from blah;', 0)
     >>> buf = ['select count(*)', 'from test', 'where x = 1;', '', 'select * from x;']
     >>> get_query_under_cursor(buf, 0, 4)
-    'select count(*)\nfrom test\nwhere x = 1;'
+    ('select count(*)\nfrom test\nwhere x = 1;', 0)
     >>> get_query_under_cursor(buf, 1, 4)
-    'select count(*)\nfrom test\nwhere x = 1;'
+    ('select count(*)\nfrom test\nwhere x = 1;', 1)
     >>> get_query_under_cursor(buf, 2, 4)
-    'select count(*)\nfrom test\nwhere x = 1;'
+    ('select count(*)\nfrom test\nwhere x = 1;', 2)
     >>> get_query_under_cursor(buf, 4, 4)
-    'select * from x;'
+    ('select * from x;', 0)
     """
-    before = reversed(list(itertools.takewhile(bool, reversed(buffer[:row]))))
-    after = itertools.takewhile(bool, buffer[row:])
-    return '\n'.join(itertools.chain(before, after))
+    before = list(reversed(list(itertools.takewhile(bool, reversed(buffer[:row])))))
+    after = list(itertools.takewhile(bool, buffer[row:]))
+    return '\n'.join(before + after), len(before)
 
 
 def get_word_under_cursor(buffer, row, col):

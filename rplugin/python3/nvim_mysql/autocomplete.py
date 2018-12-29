@@ -136,8 +136,8 @@ def _complete(line_segment, base, vim, cursor):
     logger.debug('autocomplete: line segment is "{}"'.format(line_segment))
 
     row, col = vim.current.window.cursor[0] - 1, vim.current.window.cursor[1]
-    query = nvim_mysql.util.get_query_under_cursor(vim.current.buffer, row, col)
-    namespace = _get_namespace_for_autocomplete(query, row, col)
+    query, row_in_query = nvim_mysql.util.get_query_under_cursor(vim.current.buffer, row, col)
+    namespace = _get_namespace_for_autocomplete(query, row_in_query, col)
     logger.debug('autocomplete: namespace is "{}"'.format(namespace))
 
     cursor.execute("show databases")

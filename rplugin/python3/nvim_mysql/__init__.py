@@ -313,7 +313,7 @@ class MySQL(object):
         if current_tab is None:
             raise NvimMySQLError("This is not a MySQL-connected tabpage")
 
-        query = nvim_mysql.util.get_query_under_cursor(
+        query, _ = nvim_mysql.util.get_query_under_cursor(
             self.vim.current.buffer,
             self.vim.current.window.cursor[0] - 1,
             self.vim.current.window.cursor[1]
