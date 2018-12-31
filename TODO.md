@@ -39,7 +39,6 @@
 # Bugs
 
   - Keybindings should be limited to MySQL-connected buffers
-  - Custom tabline appears to remove/hide modified flag
   - Visual selection is lost if MySQLShowResults is called during
 
   - ~~Second nvim instance freezes when trying to MySQLConnect~~
@@ -60,6 +59,7 @@
   - ~~Can't sample or describe table name in backticks~~
   - ~~If you MySQLConnect from the results buffer (e.g. if connection expires),
     it will set ft=mysql~~
+  - ~~Custom tabline appears to remove/hide modified flag~~
 
 # Tests
 

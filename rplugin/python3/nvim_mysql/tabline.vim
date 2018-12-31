@@ -29,10 +29,16 @@ endfunction
 function MySQLTabLabel(n)
   let buflist = tabpagebuflist(a:n)
   let winnr = tabpagewinnr(a:n)
-  let name =  bufname(buflist[winnr - 1])
+  let bufnum = buflist[winnr - 1]
+  let name =  bufname(bufnum)
+  let modified = getbufvar(bufnum, "&mod")
 
   if name == ""
     let name = "[No Name]"
+  endif
+
+  if modified == 1
+    let name = "+ " . name
   endif
 
   let server = gettabvar(a:n, "MySQLServer")
