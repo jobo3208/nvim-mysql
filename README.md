@@ -16,7 +16,10 @@ nvim-mysql uses a model of one database connection per tab.
 
 To connect the current tab to a database, type
 
-    :MySQLConnect <host>
+    :MySQLConnect <target>
+
+`<target>` can be a hostname, connection string, or an alias defined in
+the `g:nvim_mysql#aliases` map.
 
 Once connected, you can run the query under the cursor by hitting `Enter`
 in normal mode. (Note that currently, queries must be separated by a blank

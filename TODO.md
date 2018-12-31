@@ -1,10 +1,10 @@
 # Core
 
-  - Allow connection presets in vimrc
   - Make keybindings customizable
   - Reconnect if connection is lost
 
   - ~~Support connection strings~~
+  - ~~Allow connection presets in vimrc~~
   
 # Features
 

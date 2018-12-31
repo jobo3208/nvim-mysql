@@ -274,7 +274,13 @@ class MySQL(object):
     @pynvim.command('MySQLConnect', nargs=1, sync=True)
     def connect(self, args):
         """Use the given connection_string to connect the current tabpage to a MySQL server."""
-        connection_string = args[0]
+        target = args[0]
+        aliases = self.vim.vars.get('nvim_mysql#aliases', None)
+        if aliases is not None and target in aliases:
+            logger.debug("'{}' is an alias for '{}'".format(target, aliases[target]))
+            connection_string = aliases[target]
+        else:
+            connection_string = target
         db_params = cxnstr.to_dict(connection_string)
         server = db_params['host']
         logger.debug("connecting to {}".format(connection_string))
