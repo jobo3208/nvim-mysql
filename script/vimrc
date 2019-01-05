@@ -29,3 +29,12 @@ nnoremap K :MySQLKillQuery<CR>
 nnoremap <Leader>c :MySQLCountTableUnderCursor<CR>
 nnoremap <Leader>d :MySQLDescribeTableUnderCursor<CR>
 nnoremap <Leader>s :MySQLSampleTableUnderCursor<CR>
+
+" nvim-mysql options
+
+" aliases: map from alias -> connection string
+let g:nvim_mysql#aliases = {}
+
+" auto_close_results: close results window automatically if it's the last
+" window in a tab
+let g:nvim_mysql#auto_close_results = 1
