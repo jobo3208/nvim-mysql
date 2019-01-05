@@ -524,7 +524,7 @@ class MySQL(object):
         return current_tab.complete(*args)
 
     @pynvim.autocmd('TabClosed', sync=True)
-    def on_tabclosed(self):
+    def cleanup_tabs_on_tabclosed(self):
         self.cleanup_tabs()
 
     def cleanup_tabs(self):
@@ -536,7 +536,7 @@ class MySQL(object):
                 del self.tabs[nvim_tab]
 
     @pynvim.autocmd('WinEnter', sync=True)
-    def auto_close_results(self):
+    def auto_close_results_on_winenter(self):
         if self.vim.vars.get('nvim_mysql#auto_close_results', 0):
             tabpage = self.vim.current.tabpage
             current_tab = self.tabs.get(tabpage, None)
