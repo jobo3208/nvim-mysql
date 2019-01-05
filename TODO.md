@@ -19,6 +19,7 @@
   - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
   - ~~Shortcuts for describing and sampling a table~~
   - ~~Freeze panes in results buffer~~
+  - ~~Shortcut for counting a table~~
 
 # Meta
 

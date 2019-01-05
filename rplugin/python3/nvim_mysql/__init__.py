@@ -370,6 +370,28 @@ class MySQL(object):
         else:
             raise NvimMySQLError("Table '{}' does not exist".format(table))
 
+    @pynvim.command('MySQLCountTableUnderCursor', sync=False)
+    def count_table_under_cursor(self):
+        """Select count(*) from the table under the cursor."""
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        word = nvim_mysql.util.get_word_under_cursor(
+            self.vim.current.buffer,
+            self.vim.current.window.cursor[0] - 1,
+            self.vim.current.window.cursor[1]
+        )
+        table = nvim_mysql.util.word_to_table(word)
+        if nvim_mysql.util.table_exists(current_tab.conn, table):
+            query = "select count(*) from {}".format(table)
+            current_tab.execute_query(query)
+        else:
+            raise NvimMySQLError("Table '{}' does not exist".format(table))
+
     @pynvim.command('MySQLKillQuery', sync=True)
     def kill_query(self):
         """Kill the query currently executing in the current tabpage.
