@@ -535,6 +535,22 @@ class MySQL(object):
                 mysql_tab.close()
                 del self.tabs[nvim_tab]
 
+    @pynvim.autocmd('WinEnter', sync=True)
+    def auto_close_results(self):
+        if self.vim.vars.get('nvim_mysql#auto_close_results', 0):
+            tabpage = self.vim.current.tabpage
+            current_tab = self.tabs.get(tabpage, None)
+            if current_tab is not None:
+                if len(tabpage.windows) == 1:
+                    window = tabpage.windows[0]
+                    if window.buffer == current_tab.results_buffer:
+                        self.vim.command('q')
+
+                        # We have to call this manually because the TabClosed
+                        # autocommand doesn't appear to be called when using
+                        # vim.command.
+                        self.cleanup_tabs()
+
     def _initialize(self):
         self.initialized = True
         tabline_file = os.path.join(os.path.dirname(__file__), 'tabline.vim')

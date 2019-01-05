@@ -20,6 +20,7 @@
   - ~~Shortcuts for describing and sampling a table~~
   - ~~Freeze panes in results buffer~~
   - ~~Shortcut for counting a table~~
+  - ~~Auto-close results window if last window in tab~~
 
 # Meta
 
