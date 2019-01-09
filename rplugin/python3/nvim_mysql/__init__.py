@@ -324,7 +324,8 @@ class MySQL(object):
             self.vim.current.window.cursor[0] - 1,
             self.vim.current.window.cursor[1]
         )
-        current_tab.execute_query(query)
+        if query is not None:
+            current_tab.execute_query(query)
 
     @pynvim.command('MySQLDescribeTableUnderCursor', sync=False)
     def describe_table_under_cursor(self):

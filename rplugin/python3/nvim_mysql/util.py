@@ -20,12 +20,17 @@ def get_query_under_cursor(buffer, row, col):
     ('select count(*)\nfrom test\nwhere x = 1;', 1)
     >>> get_query_under_cursor(buf, 2, 4)
     ('select count(*)\nfrom test\nwhere x = 1;', 2)
+    >>> get_query_under_cursor(buf, 3, 0)
+    (None, 0)
     >>> get_query_under_cursor(buf, 4, 4)
     ('select * from x;', 0)
     """
-    before = list(reversed(list(itertools.takewhile(bool, reversed(buffer[:row])))))
-    after = list(itertools.takewhile(bool, buffer[row:]))
-    return '\n'.join(before + after), len(before)
+    if buffer[row].strip() == '':
+        return (None, 0)
+    else:
+        before = list(reversed(list(itertools.takewhile(bool, reversed(buffer[:row])))))
+        after = list(itertools.takewhile(bool, buffer[row:]))
+        return '\n'.join(before + after), len(before)
 
 
 def get_word_under_cursor(buffer, row, col):

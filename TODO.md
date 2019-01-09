@@ -62,6 +62,7 @@
   - ~~If you MySQLConnect from the results buffer (e.g. if connection expires),
     it will set ft=mysql~~
   - ~~Custom tabline appears to remove/hide modified flag~~
+  - ~~MySQLExecQueryUnderCursor on a blank line runs nearby query~~
 
 # Tests
 
