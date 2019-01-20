@@ -13,14 +13,14 @@
   - Shortcuts (e.g. copy a table) (maybe better implemented as snippets?)
   - When autocompleting a name with spaces in it, wrap in backticks
   - Query log
-  - More query metadata in results buffer (e.g. execution time, dimensions
-    of result set)
 
   - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
   - ~~Shortcuts for describing and sampling a table~~
   - ~~Freeze panes in results buffer~~
   - ~~Shortcut for counting a table~~
   - ~~Auto-close results window if last window in tab~~
+  - ~~More query metadata in results buffer (e.g. execution time,
+    dimensions of result set)~~
 
 # Meta
 

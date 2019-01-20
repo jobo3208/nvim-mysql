@@ -3,6 +3,7 @@ import csv
 import io
 import logging
 import os
+import time
 
 import cxnstr
 import greenlet
@@ -100,20 +101,33 @@ def results_to_csv(header, rows):
     return f.getvalue().splitlines()
 
 
-def format_results(results, format_='table'):
+def format_results(results, format_='table', metadata=None):
+    if metadata is None:
+        metadata = {}
+
     if results['type'] == 'read':
         if format_ == 'table':
             lines = results_to_table(results['header'], results['rows'], results['types'])
-            lines.extend(["", "{} row(s) in set".format(results['count'])])
-            return lines
+            lines.extend(["", "{} row(s) in set, {} col(s)".format(results['count'], len(results['header']))])
         elif format_ == 'csv':
-            return results_to_csv(results['header'], results['rows'])
+            lines = results_to_csv(results['header'], results['rows'])
         else:
             raise ValueError("Invalid results format '{}'".format(format_))
     elif results['type'] == 'write':
-        return ["", "{} row(s) affected".format(results['count'])]
+        lines = ["", "{} row(s) affected".format(results['count'])]
     elif results['type'] == 'error':
-        return results['message'].splitlines()
+        lines = results['message'].splitlines()
+
+    if format_ == 'table':
+        duration = metadata.get('duration')
+        if duration is not None and results['type'] in ['read', 'write']:
+            lines[-1] += " ({:.2f} sec)".format(duration)
+
+        query = metadata.get('query')
+        if query is not None:
+            lines.extend(['', '---', ''] + query.splitlines())
+
+    return lines
 
 
 class MySQLTab(object):
@@ -136,6 +150,9 @@ class MySQLTab(object):
             'results_pending': False,
         }
         self.results = []  # results from last query
+        self.query = None
+        self.query_start = None
+        self.query_end = None
         self.results_buffer = self._initialize_results_buffer()
         self.results_format = None
 
@@ -216,6 +233,7 @@ class MySQLTab(object):
 
         def run_query():
             logger.debug("run_query called")
+            self.query_start = time.time()
             try:
                 cursor.execute(query)
             except Exception as e:
@@ -225,8 +243,10 @@ class MySQLTab(object):
 
         def query_done(*args):
             logger.debug("query_done called")
+            self.query_end = time.time()
             gr.switch()
 
+        self.query = query
         self.update_status(executing=True)
         loop = asyncio.get_running_loop()
         fut = loop.run_in_executor(None, run_query)
@@ -483,7 +503,11 @@ class MySQL(object):
             self.vim.command("b! {}".format(current_tab.results_buffer.number))
 
         if current_tab.status['results_pending'] or format_ != self.results_format:
-            current_tab.results_buffer[:] = format_results(current_tab.results, format_)
+            metadata = {
+                'query': current_tab.query,
+                'duration': current_tab.query_end - current_tab.query_start,
+            }
+            current_tab.results_buffer[:] = format_results(current_tab.results, format_, metadata)
             self.results_format = format_
             self.vim.command("normal gg0")
 
