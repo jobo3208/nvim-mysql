@@ -309,10 +309,13 @@ class MySQL(object):
         if aliases is not None and target in aliases:
             logger.debug("'{}' is an alias for '{}'".format(target, aliases[target]))
             connection_string = aliases[target]
+            server_name = target
         else:
             connection_string = target
+            server_name = None
         db_params = cxnstr.to_dict(connection_string)
-        server_name = db_params['host']
+        if server_name is None:
+            server_name = db_params['host']
         logger.debug("connecting to {}".format(connection_string))
         conn = pymysql.connect(**db_params)
         conn.autocommit(True)
