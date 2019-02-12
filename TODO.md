@@ -63,6 +63,7 @@
     it will set ft=mysql~~
   - ~~Custom tabline appears to remove/hide modified flag~~
   - ~~MySQLExecQueryUnderCursor on a blank line runs nearby query~~
+  - ~~Binary values are wrapped in b'' in CSV output~~
 
 # Tests
 

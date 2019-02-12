@@ -94,10 +94,21 @@ def results_to_table(header, rows, types=None):
 
 
 def results_to_csv(header, rows):
+    """Format query result set as a CSV file.
+
+    Note that CSV is a text format, so binary data that is not valid utf-8 will
+    cause an error.
+    """
+    def output_value(v):
+        if isinstance(v, bytes):
+            return v.decode('utf-8')
+        return v
+
     f = io.StringIO()
     csv_out = csv.writer(f)
-    csv_out.writerow(header)
-    csv_out.writerows(rows)
+    csv_out.writerow([output_value(v) for v in header])
+    for row in rows:
+        csv_out.writerow([output_value(v) for v in row])
     return f.getvalue().splitlines()
 
 
