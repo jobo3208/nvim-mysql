@@ -21,13 +21,13 @@ To connect the current tab to a database, type
 `<target>` can be a hostname, connection string, or an alias defined in
 the `g:nvim_mysql#aliases` map.
 
-Once connected, you can run the query under the cursor by hitting `Enter`
-in normal mode. (Note that currently, queries must be separated by a blank
-line for this to work.) This will run the query asynchronously,
-immediately returning control to the editor while the query executes. Once
-the query is done, a results window will be displayed. Press `R` to jump
-to the results window. You can quickly close the results window by
-pressing `q`.
+Once connected, you can run the query under the cursor by hitting
+`<Leader>x` (`<Leader>` is typically backslash) in normal mode. (Note that
+currently, queries must be separated by a blank line for this to work.)
+This will run the query asynchronously, immediately returning control to
+the editor while the query executes. Once the query is done, a results
+window will be displayed. Press `R` to jump to the results window. You can
+quickly close the results window by pressing `q`.
 
 If a query is taking too long, you can press `K` is normal mode to kill
 it. Note that you can currently only run one query at a time per tab.
