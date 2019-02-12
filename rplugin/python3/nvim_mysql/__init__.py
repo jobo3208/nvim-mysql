@@ -153,8 +153,9 @@ class MySQLTab(object):
         self.mysql = mysql
         self.tabpage = tabpage
         self.autoid = MySQLTab.AUTOID; MySQLTab.AUTOID += 1
-        self.server = None
         self.conn = None
+        self.connection_string = None
+        self.server_name = None
         self.status = {
             'executing': False,
             'killing': False,
@@ -189,16 +190,14 @@ class MySQLTab(object):
 
         return results_buffer
 
-    def set_connection(self, conn, server):
-        """Set this MySQL tab's database connection to conn.
-
-        server is the server name.
-        """
+    def set_connection(self, conn, connection_string, server_name):
+        """Set this MySQL tab's database connection to conn."""
         if self.conn:
             self.conn.close()
         self.conn = conn
-        self.server = server
-        self.tabpage.vars['MySQLServer'] = server
+        self.connection_string = connection_string
+        self.server_name = server_name
+        self.tabpage.vars['MySQLServer'] = server_name
 
     def update_status(self, **kwargs):
         """Set one or more status flags for this tab.
@@ -313,7 +312,7 @@ class MySQL(object):
         else:
             connection_string = target
         db_params = cxnstr.to_dict(connection_string)
-        server = db_params['host']
+        server_name = db_params['host']
         logger.debug("connecting to {}".format(connection_string))
         conn = pymysql.connect(**db_params)
         conn.autocommit(True)
@@ -326,7 +325,7 @@ class MySQL(object):
         else:
             logger.debug("this tab is not MySQL-connected, will initialize")
             tab = self.tabs[tabpage] = MySQLTab(self, self.vim, tabpage)
-        tab.set_connection(conn, server)
+        tab.set_connection(conn, connection_string, server_name)
 
         if self.vim.current.buffer.name == '' and 'current_syntax' not in self.vim.current.buffer.vars:
             self.vim.command('set ft=mysql')
@@ -446,7 +445,8 @@ class MySQL(object):
         query_id = current_tab.conn.thread_id()
         logger.debug("thread id: {}".format(query_id))
 
-        conn = pymysql.connect(current_tab.server, read_default_file='~/.my.cnf')
+        db_params = cxnstr.to_dict(current_tab.connection_string)
+        conn = pymysql.connect(**db_params)
         try:
             cursor = conn.cursor()
             cursor.execute("kill query {}".format(query_id))
