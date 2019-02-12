@@ -23,7 +23,7 @@ let &runtimepath .= ',' . getcwd()
 let $NVIM_RPLUGIN_MANIFEST = './script/rplugin.vim'
 
 " keybindings
-nnoremap <CR> :MySQLExecQueryUnderCursor<CR>
+nnoremap <Leader>x :MySQLExecQueryUnderCursor<CR>
 nnoremap R :MySQLShowResults<CR>
 nnoremap K :MySQLKillQuery<CR>
 nnoremap <Leader>c :MySQLCountTableUnderCursor<CR>
