@@ -29,7 +29,7 @@ the editor while the query executes. Once the query is done, a results
 window will be displayed. Press `R` to jump to the results window. You can
 quickly close the results window by pressing `q`.
 
-If a query is taking too long, you can press `K` is normal mode to kill
+If a query is taking too long, you can press `K` in normal mode to kill
 it. Note that you can currently only run one query at a time per tab.
 
 ### Autocomplete
