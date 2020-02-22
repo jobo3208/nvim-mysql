@@ -36,6 +36,12 @@ If a query is taking too long, you can press `K` in normal mode to kill
 it. Note that you can currently only run one query (or sequence of
 queries) at a time per tab.
 
+### Tree View
+
+Press `T` to open a tree-view window. This view shows databases at
+a glance. Press the spacebar to open/close databases and see the tables
+inside.
+
 ### Autocomplete
 
 nvim-mysql can autocomplete table and column names. Use `Ctrl-X Ctrl-U` to

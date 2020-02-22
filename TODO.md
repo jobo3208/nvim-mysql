@@ -12,7 +12,9 @@
   - Shortcuts (e.g. copy a table) (maybe better implemented as snippets?)
   - When autocompleting a name with spaces in it, wrap in backticks
   - Query log
+  - Add more objects to tree view (views, functions, triggers, etc.)
 
+  - ~~Database tree view~~
   - ~~Allow running a series of queries~~
   - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
   - ~~Shortcuts for describing and sampling a table~~
@@ -42,6 +44,11 @@
 
   - Keybindings should be limited to MySQL-connected buffers
   - Visual selection is lost if MySQLShowResults is called during
+  - Tree view: when running a command on a table in the tree view, the
+    results window should not be confined to the tree view window. It
+    should use the "main" results window.
+  - Tree view: make unmodifiable by user (but obviously *we* need to be
+    able to modify it)
 
   - ~~Second nvim instance freezes when trying to MySQLConnect~~
   - ~~Can't MySQLConnect if buffer has been modified~~

@@ -167,6 +167,8 @@ class MySQLTab(object):
         self.query_end = None
         self.results_buffer = self._initialize_results_buffer()
         self.results_format = None
+        self.tree = Tree(self)
+        self.tree_buffer = self._initialize_tree_buffer()
 
     def _initialize_results_buffer(self):
         cur_buf = self.vim.current.buffer
@@ -189,6 +191,25 @@ class MySQLTab(object):
         self.vim.command("b! {}".format(cur_buf.number))
 
         return results_buffer
+
+    def _initialize_tree_buffer(self):
+        cur_buf = self.vim.current.buffer
+
+        # Create
+        buf_name = "Tree{}".format(self.autoid)
+        self.vim.command("badd {}".format(buf_name))
+
+        # Set up
+        tree_buffer = list(self.vim.buffers)[-1]
+        self.vim.command("b! {}".format(tree_buffer.number))
+        self.vim.command("setl buftype=nofile bufhidden=hide nowrap nonu noswapfile")
+        self.vim.command("nnoremap <buffer> <Space> :MySQLTreeToggleDatabase<CR>")
+        self.vim.command("nnoremap <buffer> q :q<CR>")
+
+        # Switch back
+        self.vim.command("b! {}".format(cur_buf.number))
+
+        return tree_buffer
 
     def set_connection(self, conn, connection_string, server_name):
         """Set this MySQL tab's database connection to conn."""
@@ -322,6 +343,7 @@ class MySQLTab(object):
         except:
             pass
         self.vim.command("bd! {}".format(self.results_buffer.number))
+        self.vim.command("bd! {}".format(self.tree_buffer.number))
 
 
 @pynvim.plugin
@@ -571,6 +593,62 @@ class MySQL(object):
 
         self.vim.feedkeys("""gg^:=winheight('%')-4spL3jH^:se scbk:se scb:se sbo=horj""")
 
+    @pynvim.command('MySQLShowTree', sync=True)
+    def show_tree(self):
+        """Display the tree buffer."""
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        # If tree buffer is already open, jump to it.
+        tree_buffer_windows = [(i, w) for (i, w) in enumerate(
+            self.vim.current.tabpage.windows, 1) if w.buffer == current_tab.tree_buffer]
+        if tree_buffer_windows:
+            logger.debug("tree buffer is already open in this tab")
+            self.vim.command('{}wincmd w'.format(tree_buffer_windows[0][0]))
+        else:
+            # If not, open it.
+            tree_win_width = int(self.vim.current.window.width * 0.18)
+            split_command = "{}vs".format(tree_win_width)
+            logger.debug("split command: {}".format(split_command))
+            self.vim.command(split_command)
+            self.vim.command('wincmd r')  # move tree window from right to left
+            self.vim.command("b! {}".format(current_tab.tree_buffer.number))
+
+        current_tab.tree.refresh_data()
+        current_tab.tree_buffer[:] = current_tab.tree.render()
+
+    @pynvim.command('MySQLTreeToggleDatabase', sync=True)
+    def tree_toggle_database(self):
+        """Open or close the nearest database in the tree."""
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        if current_tab.tree_buffer != self.vim.current.buffer:
+            raise NvimMySQLError("This command can only be run in tree buffer")
+
+        cur_line = self.vim.current.window.cursor[0] - 1
+        for i, line in enumerate(reversed(self.vim.current.buffer[:cur_line + 1])):
+            if line.endswith('▾'):
+                database = line[:-1].strip()
+                current_tab.tree.close(database)
+                break
+            elif line.endswith('▸'):
+                database = line[:-1].strip()
+                current_tab.tree.open(database)
+                break
+
+        current_tab.tree.refresh_data()
+        current_tab.tree_buffer[:] = current_tab.tree.render()
+        self.vim.current.window.cursor = [cur_line + 1 - i, 0]
+
     @pynvim.function('MySQLComplete', sync=True)
     def complete(self, args):
         if not self.initialized:
@@ -601,20 +679,25 @@ class MySQL(object):
                 del self.tabs[nvim_tab]
 
     @pynvim.autocmd('WinEnter', sync=True)
-    def auto_close_results_on_winenter(self):
-        if self.vim.vars.get('nvim_mysql#auto_close_results', 0):
-            tabpage = self.vim.current.tabpage
-            current_tab = self.tabs.get(tabpage, None)
-            if current_tab is not None:
-                if len(tabpage.windows) == 1:
-                    window = tabpage.windows[0]
-                    if window.buffer == current_tab.results_buffer:
-                        self.vim.command('q')
+    def auto_close_aux_windows_on_winenter(self):
+        """Close remaining windows in tab when all are disposable."""
+        def closeable(window):
+            auto_close_results = bool(self.vim.vars.get('nvim_mysql#auto_close_results', 0))
+            is_results_window = window.buffer == current_tab.results_buffer
+            is_tree_window = window.buffer == current_tab.tree_buffer
+            return (auto_close_results and is_results_window) or is_tree_window
 
-                        # We have to call this manually because the TabClosed
-                        # autocommand doesn't appear to be called when using
-                        # vim.command.
-                        self.cleanup_tabs()
+        tabpage = self.vim.current.tabpage
+        current_tab = self.tabs.get(tabpage, None)
+        if current_tab is not None:
+            if all(closeable(w) for w in tabpage.windows):
+                for _ in range(len(tabpage.windows)):
+                    self.vim.command('q')
+
+                # We have to call this manually because the TabClosed
+                # autocommand doesn't appear to be called when using
+                # vim.command.
+                self.cleanup_tabs()
 
     def _initialize(self):
         self.initialized = True
@@ -628,3 +711,48 @@ class MySQL(object):
 
     def refresh_tabline(self):
         self.vim.command('set showtabline=2 tabline=%!MySQLTabLine()')
+
+
+class Tree(object):
+    """Internal representation of tree view."""
+    def __init__(self, tab):
+        self.tab = tab
+        self.data = {}  # {db: {expanded: bool, objects: [str]}}
+
+    def refresh_data(self):
+        cursor = self.tab.conn.cursor()
+        cursor.execute("show databases")
+        databases = [r[0] for r in cursor.fetchall()]
+
+        # Remove databases that are no longer listed
+        for database in self.data:
+            if database not in databases:
+                del self.data[database]
+
+        # Add new databases
+        for database in databases:
+            if database not in self.data:
+                self.data[database] = {'expanded': False, 'objects': []}
+
+        # Update objects for expanded databases
+        for database in self.data:
+            if self.data[database]['expanded']:
+                cursor.execute("show tables from {}".format(database))
+                tables = [r[0] for r in cursor.fetchall()]
+                self.data[database]['objects'] = tables
+
+    def open(self, database):
+        self.data[database]['expanded'] = True
+
+    def close(self, database):
+        self.data[database]['expanded'] = False
+
+    def render(self):
+        s = ''
+        for database in sorted(self.data):
+            s += database
+            s += ' ▾' if self.data[database]['expanded'] else ' ▸'
+            s += '\n'
+            if self.data[database]['expanded']:
+                s += '  ' + '\n  '.join(self.data[database]['objects']) + '\n'
+        return s.splitlines()
