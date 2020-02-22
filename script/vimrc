@@ -28,6 +28,7 @@ nnoremap R :MySQLShowResults<CR>
 nnoremap K :MySQLKillQuery<CR>
 nnoremap <Leader>c :MySQLCountTableUnderCursor<CR>
 nnoremap <Leader>d :MySQLDescribeTableUnderCursor<CR>
+nnoremap <Leader>i :MySQLShowIndexesFromTableUnderCursor<CR>
 nnoremap <Leader>s :MySQLSampleTableUnderCursor<CR>
 
 " nvim-mysql options
