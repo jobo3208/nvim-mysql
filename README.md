@@ -29,8 +29,12 @@ the editor while the query executes. Once the query is done, a results
 window will be displayed. Press `R` to jump to the results window. You can
 quickly close the results window by pressing `q`.
 
+You can also sequentially run all queries in the currently selected range
+by typing `<Leader>x` in visual mode.
+
 If a query is taking too long, you can press `K` in normal mode to kill
-it. Note that you can currently only run one query at a time per tab.
+it. Note that you can currently only run one query (or sequence of
+queries) at a time per tab.
 
 ### Autocomplete
 

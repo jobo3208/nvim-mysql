@@ -24,6 +24,7 @@ let $NVIM_RPLUGIN_MANIFEST = './script/rplugin.vim'
 
 " keybindings
 nnoremap <Leader>x :MySQLExecQueryUnderCursor<CR>
+vnoremap <Leader>x :MySQLExecQueriesInRange<CR>
 nnoremap R :MySQLShowResults<CR>
 nnoremap K :MySQLKillQuery<CR>
 nnoremap <Leader>c :MySQLCountTableUnderCursor<CR>

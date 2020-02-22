@@ -33,6 +33,52 @@ def get_query_under_cursor(buffer, row, col):
         return '\n'.join(before + after), len(before)
 
 
+def get_queries_in_range(buffer, start_row, end_row):
+    r"""Return a list of queries in the given range.
+
+    The list will include queries that are partially in the range.
+
+    >>> buf = ['', 'select count(*) from blah;', '', 'update bloo', 'set a = 1;', '', '']
+    >>> get_queries_in_range(buf, 0, 0)
+    []
+    >>> get_queries_in_range(buf, 1, 1)
+    ['select count(*) from blah;']
+    >>> get_queries_in_range(buf, 0, 2)
+    ['select count(*) from blah;']
+    >>> get_queries_in_range(buf, 0, 3)
+    ['select count(*) from blah;', 'update bloo\nset a = 1;']
+    >>> get_queries_in_range(buf, 1, 4)
+    ['select count(*) from blah;', 'update bloo\nset a = 1;']
+    >>> get_queries_in_range(buf, 4, 6)
+    ['update bloo\nset a = 1;']
+    >>> get_queries_in_range(buf, 5, 6)
+    []
+    """
+    if buffer[start_row].strip():
+        before = list(reversed(list(itertools.takewhile(bool, reversed(buffer[:start_row])))))
+    else:
+        before = []
+    if buffer[end_row].strip():
+        after = list(itertools.takewhile(bool, buffer[end_row:]))
+    else:
+        after = []
+
+    queries = []
+    query = ''
+    for line in before + buffer[start_row:end_row] + after:
+        if line.strip():
+            if query:
+                query += '\n'
+            query += line
+        elif query:
+            queries.append(query)
+            query = ''
+    if query:
+        queries.append(query)
+
+    return queries
+
+
 def get_word_under_cursor(buffer, row, col):
     """
     >>> buf = ['select count(*) from db.test;', '', '    ']

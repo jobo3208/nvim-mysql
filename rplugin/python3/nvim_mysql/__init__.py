@@ -225,61 +225,93 @@ class MySQLTab(object):
 
         self.mysql.refresh_tabline()
 
-    def execute_query(self, query):
-        """Execute the given query in this tab.
+    def execute_queries(self, queries, combine_results):
+        """Sequentially execute the given queries in this tab.
 
-        Results will be displayed if appropriate when the query finishes.
+        If there is an error, execution will stop and the error will be
+        displayed.
+
+        Assuming all queries succeed, if combine_results is True,
+        aggregate counts will be shown after the last query. (Note that
+        these counts pertain only to "write" queries.) If
+        combine_results is False, the results of the last query are
+        shown.
         """
         # Ignore if a query is already running.
         if self.status['executing']:
             return
 
-        # python2 can't assign to the error variable from inside
-        # run_query. If we migrate to py3, we should be able to use the
-        # nonlocal keyword. For now, we'll use a mutable container.
-        error = []
+        error = None
         gr = greenlet.getcurrent()
         cursor = self.conn.cursor()
 
-        def run_query():
+        def run_query(query):
             logger.debug("run_query called")
-            self.query_start = time.time()
             try:
                 cursor.execute(query)
             except Exception as e:
-                error.append("Error: " + repr(e))
-            finally:
-                cursor.close()
+                nonlocal error
+                error = "Error: " + repr(e)
 
         def query_done(*args):
             logger.debug("query_done called")
-            self.query_end = time.time()
             gr.switch()
 
-        self.query = query
-        self.update_status(executing=True)
-        loop = asyncio.get_running_loop()
-        fut = loop.run_in_executor(None, run_query)
-        fut.add_done_callback(query_done)
-        logger.debug("executing query: {}".format(query))
-        gr.parent.switch()
+        if combine_results:
+            self.query = ''
+            self.results = {'type': 'write', 'count': 0}
 
-        # Query is done.
+        self.update_status(executing=True)
+        self.query_start = time.time()
+        loop = asyncio.get_running_loop()
+        for query in queries:
+            if combine_results:
+                if self.query:
+                    self.query += '\n\n'
+                self.query += query
+            else:
+                self.query = query
+
+            fut = loop.run_in_executor(None, run_query, query)
+            fut.add_done_callback(query_done)
+            logger.debug("executing query: {}".format(query))
+            gr.parent.switch()
+
+            # Query is done.
+            if error:
+                self.results = {'type': 'error', 'message': error}
+                break
+
+            if combine_results:
+                if not cursor.description:
+                    self.results['count'] += cursor.rowcount
+                else:
+                    # for "read" queries, do nothing
+                    pass
+            else:
+                if not cursor.description:
+                    self.results = {'type': 'write', 'count': cursor.rowcount}
+                else:
+                    header = [f[0] for f in cursor.description]
+                    types = [f[1] for f in cursor.description]
+                    rows = cursor.fetchall()
+                    self.results = {'type': 'read', 'header': header, 'types': types, 'rows': rows, 'count': cursor.rowcount}
+
+        self.query_end = time.time()
+        cursor.close()
         self.update_status(executing=False, killing=False)
-        if error:
-            self.results = {'type': 'error', 'message': error[0]}
-        elif not cursor.description:
-            self.results = {'type': 'write', 'count': cursor.rowcount}
-        else:
-            header = [f[0] for f in cursor.description]
-            types = [f[1] for f in cursor.description]
-            rows = cursor.fetchall()
-            self.results = {'type': 'read', 'header': header, 'types': types, 'rows': rows, 'count': cursor.rowcount}
 
         # TODO: Differentiate results pending from error pending?
         self.update_status(results_pending=True)
 
         self.vim.command('MySQLShowResults table {}'.format(self.autoid))
+
+    def execute_query(self, query):
+        """Execute the given query in this tab.
+
+        Results will be displayed if appropriate when the query finishes.
+        """
+        self.execute_queries([query], False)
 
     def complete(self, findstart, base):
         return nvim_mysql.autocomplete.complete(findstart, base, self.vim, self.conn.cursor())
@@ -359,6 +391,25 @@ class MySQL(object):
         )
         if query is not None:
             current_tab.execute_query(query)
+
+    @pynvim.command('MySQLExecQueriesInRange', range='', sync=False)
+    def exec_queries_in_range(self, range):
+        """Execute the queries in the visual selection.
+
+        Results of individual queries are not shown.
+
+        This command assumes that all queries are separated by at least one
+        blank line.
+        """
+        if not self.initialized:
+            raise NvimMySQLError("Use MySQLConnect to connect to a database first")
+
+        current_tab = self.tabs.get(self.vim.current.tabpage, None)
+        if current_tab is None:
+            raise NvimMySQLError("This is not a MySQL-connected tabpage")
+
+        queries = nvim_mysql.util.get_queries_in_range(self.vim.current.buffer, range[0] - 1, range[1] - 1)
+        current_tab.execute_queries(queries, len(queries) > 1)
 
     def _run_query_on_table_under_cursor(self, query_fmt):
         """Run a query on the table under the cursor."""
