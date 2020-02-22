@@ -161,7 +161,7 @@ class MySQLTab(object):
             'killing': False,
             'results_pending': False,
         }
-        self.results = []  # results from last query
+        self.results = None
         self.query = None
         self.query_start = None
         self.query_end = None
