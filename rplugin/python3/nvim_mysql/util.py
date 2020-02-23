@@ -106,6 +106,30 @@ def word_to_table(word):
     return word.rstrip(',;')
 
 
+def get_parent_database_in_tree(buffer, row):
+    """Return the parent database of the table at the given row.
+
+    The return value is a 3-tuple: (database, expanded, row_of_db)
+
+    If the given row contains a database, return that database.
+
+    >>> buf = ['a ▸', 'b ▾', '  x', 'c ▸']
+    >>> get_parent_database_in_tree(buf, 0)
+    ('a', False, 0)
+    >>> get_parent_database_in_tree(buf, 1)
+    ('b', True, 1)
+    >>> get_parent_database_in_tree(buf, 2)
+    ('b', True, 1)
+    >>> get_parent_database_in_tree(buf, 3)
+    ('c', False, 3)
+    """
+    for i, line in enumerate(reversed(buffer[:row + 1])):
+        if line.endswith('▾'):
+            return (line[:-1].strip(), True, row - i)
+        elif line.endswith('▸'):
+            return (line[:-1].strip(), False, row - i)
+
+
 class Table(object):
     """Object for representing a MySQL table and properly formatting it.
 

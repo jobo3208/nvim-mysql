@@ -508,12 +508,25 @@ class MySQL(object):
         if current_tab is None:
             raise NvimMySQLError("This is not a MySQL-connected tabpage")
 
-        word = nvim_mysql.util.get_word_under_cursor(
-            self.vim.current.buffer,
-            self.vim.current.window.cursor[0] - 1,
-            self.vim.current.window.cursor[1]
-        )
-        table = nvim_mysql.util.word_to_table(word)
+        # Special handling for tables in the tree buffer.
+        if self.vim.current.buffer == current_tab.tree_buffer:
+            # Ignore if we're on a database row.
+            if not self.vim.current.line.startswith(' '):
+                return
+            table = self.vim.current.line.strip()
+            database, _, _ = nvim_mysql.util.get_parent_database_in_tree(
+                self.vim.current.buffer,
+                self.vim.current.window.cursor[0] - 1
+            )
+            table = database + '.' + table
+        else:
+            word = nvim_mysql.util.get_word_under_cursor(
+                self.vim.current.buffer,
+                self.vim.current.window.cursor[0] - 1,
+                self.vim.current.window.cursor[1]
+            )
+            table = nvim_mysql.util.word_to_table(word)
+
         if nvim_mysql.util.table_exists(current_tab.conn, table):
             query = query_fmt.format(table)
             current_tab.execute_query(query)
@@ -675,20 +688,18 @@ class MySQL(object):
         if current_tab.tree_buffer != self.vim.current.buffer:
             raise NvimMySQLError("This command can only be run in tree buffer")
 
-        cur_line = self.vim.current.window.cursor[0] - 1
-        for i, line in enumerate(reversed(self.vim.current.buffer[:cur_line + 1])):
-            if line.endswith('▾'):
-                database = line[:-1].strip()
-                current_tab.tree.close(database)
-                break
-            elif line.endswith('▸'):
-                database = line[:-1].strip()
-                current_tab.tree.open(database)
-                break
+        database, expanded, row = nvim_mysql.util.get_parent_database_in_tree(
+            self.vim.current.buffer,
+            self.vim.current.window.cursor[0] - 1
+        )
+        if expanded:
+            current_tab.tree.close(database)
+        else:
+            current_tab.tree.open(database)
 
         current_tab.tree.refresh_data()
         current_tab.tree_buffer[:] = current_tab.tree.render()
-        self.vim.current.window.cursor = [cur_line + 1 - i, 0]
+        self.vim.current.window.cursor = [row + 1, 0]
 
     @pynvim.function('MySQLComplete', sync=True)
     def complete(self, args):
