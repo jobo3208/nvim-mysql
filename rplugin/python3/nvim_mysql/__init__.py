@@ -42,6 +42,7 @@ DATE_TYPES = [
 OPTION_DEFAULTS = {
     'aliases': None,
     'auto_close_results': 0,
+    'aux_window_pref': 'results',
 }
 
 
@@ -343,6 +344,61 @@ class MySQLTab(object):
     def complete(self, findstart, base):
         return nvim_mysql.autocomplete.complete(findstart, base, self.vim, self.conn.cursor())
 
+    def get_aux_window(self, target):
+        target_buffer = self.results_buffer if target == 'results' else self.tree_buffer
+        for window in self.vim.current.tabpage.windows:
+            if window.buffer == target_buffer:
+                return window
+        return None
+
+    def get_results_window(self):
+        return self.get_aux_window('results')
+
+    def get_tree_window(self):
+        return self.get_aux_window('tree')
+
+    def open_aux_window(self, target):
+        # If target window is already open, jump to it.
+        target_window = self.get_aux_window(target)
+        if target_window is not None:
+            logger.debug("{} window is already open in this tab".format(target))
+            self.vim.command('{}wincmd w'.format(target_window.number))
+            return
+
+        # If not, open it.
+
+        # First, check to see if we'll need to give the other window precedence.
+        other = 'tree' if target == 'results' else 'results'
+        other_window = self.get_aux_window(other)
+        reopen_other_window = other_window is not None and self.mysql.get_option('aux_window_pref') == other
+        if reopen_other_window:
+            # If so, close for now (then we'll re-open).
+            self.vim.command("{}wincmd c".format(other_window.number))
+
+        # Open target window.
+        if target == 'results':
+            result_win_height = int(self.vim.current.window.height * 0.35)
+            split_command = "botright {} split".format(result_win_height)
+        else:
+            tree_win_width = int(self.vim.current.window.width * 0.17)
+            split_command = "vertical topleft {} split".format(tree_win_width)
+
+        logger.debug("split command: {}".format(split_command))
+        self.vim.command(split_command)
+        target_buffer = self.results_buffer if target == 'results' else self.tree_buffer
+        self.vim.command("b! {}".format(target_buffer.number))
+
+        if reopen_other_window:
+            self.open_aux_window(other)
+            # switch back to our window
+            self.vim.command("{}wincmd w".format(self.get_aux_window(target).number))
+
+    def open_results_window(self):
+        self.open_aux_window('results')
+
+    def open_tree_window(self):
+        self.open_aux_window('tree')
+
     def close(self):
         try:
             self.conn.close()
@@ -559,19 +615,7 @@ class MySQL(object):
         if tab_autoid is not None and tab_autoid != current_tab.autoid:
             return
 
-        # If results buffer is already open, jump to it.
-        results_buffer_windows = [(i, w) for (i, w) in enumerate(
-            self.vim.current.tabpage.windows, 1) if w.buffer == current_tab.results_buffer]
-        if results_buffer_windows:
-            logger.debug("results buffer is already open in this tab")
-            self.vim.command('{}wincmd w'.format(results_buffer_windows[0][0]))
-        else:
-            # If not, open it.
-            result_win_height = int(self.vim.current.window.height * 0.35)
-            split_command = "{}sp".format(result_win_height)
-            logger.debug("split command: {}".format(split_command))
-            self.vim.command(split_command)
-            self.vim.command("b! {}".format(current_tab.results_buffer.number))
+        current_tab.open_results_window()
 
         if current_tab.query and (current_tab.status['results_pending'] or format_ != current_tab.results_format):
             metadata = {
@@ -612,20 +656,7 @@ class MySQL(object):
         if current_tab is None:
             raise NvimMySQLError("This is not a MySQL-connected tabpage")
 
-        # If tree buffer is already open, jump to it.
-        tree_buffer_windows = [(i, w) for (i, w) in enumerate(
-            self.vim.current.tabpage.windows, 1) if w.buffer == current_tab.tree_buffer]
-        if tree_buffer_windows:
-            logger.debug("tree buffer is already open in this tab")
-            self.vim.command('{}wincmd w'.format(tree_buffer_windows[0][0]))
-        else:
-            # If not, open it.
-            tree_win_width = int(self.vim.current.window.width * 0.18)
-            split_command = "{}vs".format(tree_win_width)
-            logger.debug("split command: {}".format(split_command))
-            self.vim.command(split_command)
-            self.vim.command('wincmd r')  # move tree window from right to left
-            self.vim.command("b! {}".format(current_tab.tree_buffer.number))
+        current_tab.open_tree_window()
 
         current_tab.tree.refresh_data()
         current_tab.tree_buffer[:] = current_tab.tree.render()
