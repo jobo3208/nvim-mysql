@@ -39,6 +39,11 @@ DATE_TYPES = [
     FT.NEWDATE,
 ]
 
+OPTION_DEFAULTS = {
+    'aliases': None,
+    'auto_close_results': 0,
+}
+
 
 class NvimMySQLError(Exception):
     pass
@@ -356,11 +361,14 @@ class MySQL(object):
         self.initialized = False
         logger.debug("initialized plugin")
 
+    def get_option(self, name):
+        return self.vim.vars.get('nvim_mysql#{}'.format(name), OPTION_DEFAULTS[name])
+
     @pynvim.command('MySQLConnect', nargs=1, sync=True)
     def connect(self, args):
         """Use the given connection_string to connect the current tabpage to a MySQL server."""
         target = args[0]
-        aliases = self.vim.vars.get('nvim_mysql#aliases', None)
+        aliases = self.get_option('aliases')
         if aliases is not None and target in aliases:
             logger.debug("'{}' is an alias for '{}'".format(target, aliases[target]))
             connection_string = aliases[target]
@@ -683,7 +691,7 @@ class MySQL(object):
     def auto_close_aux_windows_on_winenter(self):
         """Close remaining windows in tab when all are disposable."""
         def closeable(window):
-            auto_close_results = bool(self.vim.vars.get('nvim_mysql#auto_close_results', 0))
+            auto_close_results = bool(self.get_option('auto_close_results'))
             is_results_window = window.buffer == current_tab.results_buffer
             is_tree_window = window.buffer == current_tab.tree_buffer
             return (auto_close_results and is_results_window) or is_tree_window
