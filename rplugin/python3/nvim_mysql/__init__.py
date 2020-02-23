@@ -565,13 +565,13 @@ class MySQL(object):
             self.vim.command(split_command)
             self.vim.command("b! {}".format(current_tab.results_buffer.number))
 
-        if current_tab.status['results_pending'] or format_ != self.results_format:
+        if current_tab.query and (current_tab.status['results_pending'] or format_ != current_tab.results_format):
             metadata = {
                 'query': current_tab.query,
                 'duration': current_tab.query_end - current_tab.query_start,
             }
             current_tab.results_buffer[:] = format_results(current_tab.results, format_, metadata)
-            self.results_format = format_
+            current_tab.results_format = format_
             self.vim.command("normal gg0")
 
         current_tab.update_status(results_pending=False)
