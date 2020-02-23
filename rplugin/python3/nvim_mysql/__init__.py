@@ -205,6 +205,7 @@ class MySQLTab(object):
         self.vim.command("setl buftype=nofile bufhidden=hide nowrap nonu noswapfile")
         self.vim.command("nnoremap <buffer> <Space> :MySQLTreeToggleDatabase<CR>")
         self.vim.command("nnoremap <buffer> q :q<CR>")
+        self.vim.command("syn match Directory /^[^ ].*/")
 
         # Switch back
         self.vim.command("b! {}".format(cur_buf.number))
