@@ -47,6 +47,7 @@
   - Tree view: make unmodifiable by user (but obviously *we* need to be
     able to modify it)
 
+  - ~~When closing aux window, go back to previous window~~
   - ~~Tree view: when running a command on a table in the tree view, the
     results window should not be confined to the tree view window. It
     should use the "main" results window.~~
