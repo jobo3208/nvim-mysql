@@ -128,6 +128,8 @@ def format_results(results, format_='table', metadata=None):
             lines.extend(["", "{} row(s) in set, {} col(s)".format(results['count'], len(results['header']))])
         elif format_ == 'csv':
             lines = results_to_csv(results['header'], results['rows'])
+        elif format_ == 'raw_column':
+            lines = '\n'.join([str(r[0]) for r in results['rows']]).splitlines()
         else:
             raise ValueError("Invalid results format '{}'".format(format_))
     elif results['type'] == 'write':
@@ -192,6 +194,8 @@ class MySQLTab(object):
         # close window and go to previous
         self.vim.command("nnoremap <buffer> q :let nr = winnr() <Bar> :wincmd p <Bar> :exe nr . \"wincmd c\"<CR>")
         self.vim.command("nnoremap <buffer> <Leader>c :MySQLShowResults csv<CR>")
+        self.vim.command("nnoremap <buffer> <Leader>1 :MySQLShowResults raw_column<CR>")
+        self.vim.command("nnoremap <buffer> <Leader>t :MySQLShowResults table<CR>")
         self.vim.command("nnoremap <buffer> <Leader>f :MySQLFreezeResultsHeader<CR>")
 
         # Switch back
@@ -594,7 +598,17 @@ class MySQL(object):
         Both arguments are optional, but format must be specified if tab_autoid
         is specified.
 
-        format can be one of 'table' (the default) or 'csv'.
+        format can be one of 'table' (the default), 'csv', or 'raw_column'.
+
+        'table' is an ASCII table format, similar to the standard MySQL client.
+
+        'csv' formats the result set as a CSV file.
+
+        'raw_column' is a raw view of a single column (the first column, if the
+        result set contains more than one). For a 1x1 result set, this format
+        lets you see the raw data of a single data point, which can be helpful
+        for long text fields and/or text fields with newlines. It's also useful
+        for quickly extracting a list of field names from DESCRIBE output.
 
         If tab_autoid is specified, only show the results if we are currently
         in the MySQLTab with the given autoid. If tab_autoid is not specified,
@@ -612,7 +626,7 @@ class MySQL(object):
 
         if len(args) > 0:
             format_ = args[0]
-            if format_ not in ['table', 'csv']:
+            if format_ not in ['table', 'csv', 'raw_column']:
                 raise NvimMySQLError("Invalid results format '{}'".format(format_))
         else:
             format_ = 'table'

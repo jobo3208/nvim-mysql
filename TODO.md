@@ -14,6 +14,7 @@
   - Query log
   - Add more objects to tree view (views, functions, triggers, etc.)
 
+  - ~~Raw view of a single data point~~
   - ~~Database tree view~~
   - ~~Allow running a series of queries~~
   - ~~Change format of results buffer (ASCII table, CSV, etc.)~~
