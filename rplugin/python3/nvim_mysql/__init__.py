@@ -142,6 +142,12 @@ def format_results(results, format_='table', metadata=None):
         if duration is not None and results['type'] in ['read', 'write']:
             lines[-1] += " ({:.2f} sec)".format(duration)
 
+        warnings = results.get('warnings')
+        if warnings:
+            lines.extend(['', '[warnings]:'])
+            for warning in warnings:
+                lines.append("({}) {}".format(warning[1], warning[2]))
+
         query = metadata.get('query')
         if query is not None:
             lines.extend(['', '---', ''] + query.splitlines())
@@ -274,17 +280,23 @@ class MySQLTab(object):
         if self.status['executing']:
             return
 
-        error = None
         gr = greenlet.getcurrent()
         cursor = self.conn.cursor()
 
-        def run_query(query):
+        def run_query(query, result):
             logger.debug("run_query called")
             try:
                 cursor.execute(query)
+                result['description'] = cursor.description
+                result['rowcount'] = cursor.rowcount
+                result['rows'] = cursor.fetchall()
+
+                cursor.execute("show warnings")
+                result['warnings'] = cursor.fetchall()
             except Exception as e:
-                nonlocal error
-                error = "Error: " + repr(e)
+                result['error'] = "Error: " + repr(e)
+            else:
+                result['error'] = None
 
         def query_done(*args):
             logger.debug("query_done called")
@@ -292,7 +304,7 @@ class MySQLTab(object):
 
         if combine_results:
             self.query = ''
-            self.results = {'type': 'write', 'count': 0}
+            self.results = {'type': 'write', 'count': 0, 'warnings': []}
 
         self.update_status(executing=True)
         self.query_start = time.time()
@@ -305,30 +317,41 @@ class MySQLTab(object):
             else:
                 self.query = query
 
-            fut = loop.run_in_executor(None, run_query, query)
+            query_result = {}
+            fut = loop.run_in_executor(None, run_query, query, query_result)
             fut.add_done_callback(query_done)
             logger.debug("executing query: {}".format(query))
             gr.parent.switch()
 
             # Query is done.
-            if error:
-                self.results = {'type': 'error', 'message': error}
+            if query_result['error']:
+                self.results = {'type': 'error', 'message': query_result['error']}
                 break
 
             if combine_results:
+                # for "write" queries, add to count
                 if not cursor.description:
-                    self.results['count'] += cursor.rowcount
-                else:
-                    # for "read" queries, do nothing
-                    pass
+                    self.results['count'] += query_result['rowcount']
+                self.results['warnings'].extend(query_result['warnings'])
             else:
-                if not cursor.description:
-                    self.results = {'type': 'write', 'count': cursor.rowcount}
+                if not query_result['description']:
+                    self.results = {
+                        'type': 'write',
+                        'count': query_result['rowcount'],
+                        'warnings': query_result['warnings'],
+                    }
                 else:
-                    header = [f[0] for f in cursor.description]
-                    types = [f[1] for f in cursor.description]
-                    rows = cursor.fetchall()
-                    self.results = {'type': 'read', 'header': header, 'types': types, 'rows': rows, 'count': cursor.rowcount}
+                    header = [f[0] for f in query_result['description']]
+                    types = [f[1] for f in query_result['description']]
+                    rows = query_result['rows']
+                    self.results = {
+                        'type': 'read',
+                        'header': header,
+                        'types': types,
+                        'rows': rows,
+                        'count': query_result['rowcount'],
+                        'warnings': query_result['warnings'],
+                    }
 
         self.query_end = time.time()
         cursor.close()
