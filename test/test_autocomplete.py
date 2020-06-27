@@ -127,6 +127,18 @@ GET_NAMESPACE_FOR_AUTOCOMPLETE_TEST_CASES = [
         on s.student_id = x.student_id
         """, 'soccer_team'
     ),
+    (
+        # Table starting with numbers
+        """
+        select
+        from x.123a a
+        left join y.123b b
+        on a.id = b.id
+        where a.g = 'abc'
+        and a.!
+        and r.h is null
+        """, 'x.123a'
+    ),
 ]
 
 

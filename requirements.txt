@@ -2,4 +2,4 @@ cxnstr==1.1.4
 greenlet==0.4.15
 pymysql==0.9.2
 pynvim==0.3.1
-sqlparse==0.2.4
+-e git://github.com/jobo3208/sqlparse.git#egg=sqlparse
