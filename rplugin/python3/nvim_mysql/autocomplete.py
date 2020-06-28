@@ -20,15 +20,20 @@ def _findstart(line_segment):
     17
     >>> _findstart("    and x.")
     10
+    >>> _findstart("where i")
+    6
+    >>> _findstart("   ")
+    3
     """
     if '.' in line_segment:
         return line_segment.rindex('.') + 1
+    elif ' ' in line_segment:
+        return line_segment.rindex(' ') + 1
     else:
         return -1
 
 
-def _get_namespace_for_autocomplete(query, row, col):
-    """Get the namespace (database or table) that contains the autocomplete candidates."""
+def _get_namespace_for_autocomplete_qualified(query, row, col):
     class _TraversalContext(object):
         def __init__(self):
             self.scopes = [{'bindings': {}, 'level': 0}]
@@ -111,7 +116,6 @@ def _get_namespace_for_autocomplete(query, row, col):
             while self.scopes:
                 self.close_scope()
 
-
     def _traverse(token, ctx):
         ctx.handle_token(token)
         if hasattr(token, 'tokens'):
@@ -129,6 +133,47 @@ def _get_namespace_for_autocomplete(query, row, col):
     _traverse(tree, ctx)
     ctx.close_all_scopes()
     return ctx.rv
+
+
+def _get_first_table_in_query(query):
+    """Return the first table name found in query.
+
+    >>> _get_first_table_in_query("select from x.a where y = 12")
+    'x.a'
+    >>> _get_first_table_in_query("update abc set def = ghi")
+    'abc'
+    >>> _get_first_table_in_query("delete from a.bc where f = 6")
+    'a.bc'
+    >>> _get_first_table_in_query("alter table ab.cde modify q int(11)")
+    'ab.cde'
+    """
+    TABLE_INTRODUCERS = [
+        (sqlparse.tokens.Keyword, 'FROM'),
+        (sqlparse.tokens.DML, 'UPDATE'),
+        (sqlparse.tokens.DDL, 'ALTER'),
+    ]
+    tree = sqlparse.parse(query)[0]
+    found_introducer = False
+    for t in tree.tokens:
+        if any((t.ttype, t.value.upper()) == ti for ti in TABLE_INTRODUCERS):
+            found_introducer = True
+        elif found_introducer and isinstance(t, sqlparse.sql.Identifier):
+            if t.get_parent_name() is not None:
+                return t.get_parent_name() + '.' + t.get_real_name()
+            else:
+                return t.get_real_name()
+    return None
+
+
+def _get_namespace_for_autocomplete_unqualified(query, row, col):
+    return _get_first_table_in_query(query)
+
+
+def _get_namespace_for_autocomplete(query, row, col):
+    """Get the namespace (database or table) that contains the autocomplete candidates."""
+    return (
+        _get_namespace_for_autocomplete_qualified(query, row, col) or
+        _get_namespace_for_autocomplete_unqualified(query, row, col))
 
 
 def _complete(line_segment, base, vim, cursor):

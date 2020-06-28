@@ -139,6 +139,43 @@ GET_NAMESPACE_FOR_AUTOCOMPLETE_TEST_CASES = [
         and r.h is null
         """, 'x.123a'
     ),
+    (
+        # Select, no alias (where clause)
+        """
+        select
+        from student
+        where !
+        """, 'student'
+    ),
+    (
+        # Select, no alias (select clause)
+        """
+        select !
+        from student
+        """, 'student'
+    ),
+    (
+        # Update, no alias
+        """
+        update student
+        set na!
+        """, 'student'
+    ),
+    (
+        # Delete, no alias
+        """
+        delete
+        from student
+        where t!
+        """, 'student'
+    ),
+    (
+        # Alter, no alias
+        """
+        alter table student
+            modify !
+        """, 'student'
+    ),
 ]
 
 
