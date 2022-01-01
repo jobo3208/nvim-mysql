@@ -1,4 +1,5 @@
 import logging
+import re
 
 import sqlparse
 
@@ -9,6 +10,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 _SENTINEL = 'NVIM_MYSQL_SENTINEL'
+
+QUOTING_EXEMPT_IDENTIFIER = re.compile(r'^[A-Za-z0-9_]+$')
 
 
 def _findstart(line_segment):
@@ -180,6 +183,8 @@ def _complete(line_segment, base, vim, cursor):
     logger.debug('autocomplete: base: "{}"'.format(base))
     logger.debug('autocomplete: line segment is "{}"'.format(line_segment))
 
+    base = base.strip('`')
+
     row, col = vim.current.window.cursor[0] - 1, vim.current.window.cursor[1]
     query, row_in_query = nvim_mysql.util.get_query_under_cursor(vim.current.buffer, row, col)
     namespace = _get_namespace_for_autocomplete(query, row_in_query, col)
@@ -197,6 +202,9 @@ def _complete(line_segment, base, vim, cursor):
         logger.debug("autocomplete: assuming we're completing a COLUMN")
         cursor.execute("describe {}".format(namespace))
         words = [r[0] for r in cursor.fetchall() if r[0].lower().startswith(base.lower())]
+
+    # Wrap each suggestion in backticks if necessary.
+    words = ['`{}`'.format(w) if not QUOTING_EXEMPT_IDENTIFIER.match(w) else w for w in words]
 
     return [{'word': w, 'icase': 1} for w in words]
 
