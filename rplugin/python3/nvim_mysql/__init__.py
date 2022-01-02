@@ -48,6 +48,8 @@ OPTION_DEFAULTS = {
     'aux_window_pref': 'results',
 }
 
+SPINNER_CHARS = u"⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
 
 class NvimMySQLError(Exception):
     pass
@@ -457,6 +459,7 @@ class MySQL(object):
         self.vim = vim
         self.tabs = {}
         self.initialized = False
+        self.start_spinner()
         logger.debug("initialized plugin")
 
     def get_option(self, name):
@@ -812,8 +815,22 @@ class MySQL(object):
 
         self.refresh_tabline()
 
-    def refresh_tabline(self):
+    def refresh_tabline(self, spinner_char=None):
+        if spinner_char:
+            self.vim.vars['nvim_mysql#spinner_char'] = spinner_char
         self.vim.command('set showtabline=2 tabline=%!MySQLTabLine()')
+
+    def start_spinner(self):
+        def spin():
+            i = 0
+            while True:
+                i = i % len(SPINNER_CHARS)
+                self.vim.async_call(self.refresh_tabline, SPINNER_CHARS[i])
+                time.sleep(.1)
+                i += 1
+        t = threading.Thread(target=spin)
+        t.daemon = True
+        t.start()
 
 
 class Tree(object):

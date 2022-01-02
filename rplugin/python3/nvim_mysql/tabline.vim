@@ -45,6 +45,9 @@ function MySQLTabLabel(n)
   let status_flag = gettabvar(a:n, "MySQLStatusFlag")
   if server != ""
     let name .= " (" . server
+    if status_flag == "e"
+        let status_flag = g:nvim_mysql#spinner_char
+    endif
     if status_flag != ""
       let name .= " [" . status_flag . "]"
     endif
