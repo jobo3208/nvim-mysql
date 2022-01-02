@@ -1,8 +1,8 @@
-import asyncio
 import csv
 import io
 import logging
 import os
+import threading
 import time
 
 import cxnstr
@@ -283,6 +283,11 @@ class MySQLTab(object):
         gr = greenlet.getcurrent()
         cursor = self.conn.cursor()
 
+        def query_done():
+            logger.debug("query_done called")
+            gr.parent = greenlet.getcurrent()
+            gr.switch()
+
         def run_query(query, result):
             logger.debug("run_query called")
             try:
@@ -298,9 +303,7 @@ class MySQLTab(object):
             else:
                 result['error'] = None
 
-        def query_done(*args):
-            logger.debug("query_done called")
-            gr.switch()
+            self.vim.async_call(query_done)
 
         if combine_results:
             self.query = ''
@@ -308,7 +311,6 @@ class MySQLTab(object):
 
         self.update_status(executing=True)
         self.query_start = time.time()
-        loop = asyncio.get_running_loop()
         for query in queries:
             if combine_results:
                 if self.query:
@@ -318,9 +320,9 @@ class MySQLTab(object):
                 self.query = query
 
             query_result = {}
-            fut = loop.run_in_executor(None, run_query, query, query_result)
-            fut.add_done_callback(query_done)
+
             logger.debug("executing query: {}".format(query))
+            threading.Thread(target=run_query, args=[query, query_result]).start()
             gr.parent.switch()
 
             # Query is done.
