@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import itertools
 import re
 
@@ -113,7 +115,7 @@ def get_parent_database_in_tree(buffer, row):
 
     If the given row contains a database, return that database.
 
-    >>> buf = ['a ▸', 'b ▾', '  x', 'c ▸']
+    >>> buf = [u'a ▸', u'b ▾', u'  x', u'c ▸']
     >>> get_parent_database_in_tree(buf, 0)
     ('a', False, 0)
     >>> get_parent_database_in_tree(buf, 1)
@@ -124,9 +126,9 @@ def get_parent_database_in_tree(buffer, row):
     ('c', False, 3)
     """
     for i, line in enumerate(reversed(buffer[:row + 1])):
-        if line.endswith('▾'):
+        if line.endswith(u'▾'):
             return (line[:-1].strip(), True, row - i)
-        elif line.endswith('▸'):
+        elif line.endswith(u'▸'):
             return (line[:-1].strip(), False, row - i)
 
 

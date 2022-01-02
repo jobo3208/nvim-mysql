@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import csv
 import io
 import logging
@@ -10,6 +12,7 @@ import greenlet
 import pymysql
 import pymysql.constants.FIELD_TYPE as FT
 import pynvim
+import six
 
 import nvim_mysql.autocomplete
 import nvim_mysql.util
@@ -75,9 +78,12 @@ def results_to_table(header, rows, types=None):
                 v = v.decode('utf-8')
                 v = ' '.join(v.splitlines())
             except UnicodeDecodeError:
-                v = '0x' + v.hex()
+                if six.PY3:
+                    v = '0x' + v.hex()
+                else:
+                    v = '0x' + v.encode('hex')
         else:
-            v = str(v)
+            v = six.text_type(v)
             v = ' '.join(v.splitlines())
         return v
 
@@ -105,12 +111,18 @@ def results_to_csv(header, rows):
     Note that CSV is a text format, so binary data that is not valid utf-8 will
     cause an error.
     """
+    # In Python 2, the csv module can't accept unicode, so we have to give it UTF-8.
+    # In Python 3, the csv module accepts unicode.
     def output_value(v):
-        if isinstance(v, bytes):
-            return v.decode('utf-8')
+        if six.PY3:
+            if isinstance(v, bytes):
+                return v.decode('utf-8')
+        else:
+            if isinstance(v, unicode):
+                return v.encode('utf-8')
         return v
 
-    f = io.StringIO()
+    f = six.StringIO()
     csv_out = csv.writer(f)
     csv_out.writerow([output_value(v) for v in header])
     for row in rows:
@@ -466,7 +478,7 @@ class MySQL(object):
         if server_name is None:
             server_name = db_params['host']
         logger.debug("connecting to {}".format(connection_string))
-        conn = pymysql.connect(**db_params)
+        conn = pymysql.connect(use_unicode=True, **db_params)
         conn.autocommit(True)
         logger.debug("connection succeeded")
 
@@ -605,7 +617,7 @@ class MySQL(object):
         logger.debug("thread id: {}".format(query_id))
 
         db_params = cxnstr.to_dict(current_tab.connection_string)
-        conn = pymysql.connect(**db_params)
+        conn = pymysql.connect(use_unicode=True, **db_params)
         try:
             cursor = conn.cursor()
             cursor.execute("kill query {}".format(query_id))
@@ -842,7 +854,7 @@ class Tree(object):
         s = ''
         for database in sorted(self.data):
             s += database
-            s += ' ▾' if self.data[database]['expanded'] else ' ▸'
+            s += u' ▾' if self.data[database]['expanded'] else u' ▸'
             s += '\n'
             if self.data[database]['expanded']:
                 s += '  ' + '\n  '.join(self.data[database]['objects']) + '\n'
