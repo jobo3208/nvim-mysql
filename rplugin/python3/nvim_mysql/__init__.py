@@ -459,8 +459,7 @@ class MySQL(object):
         self.vim = vim
         self.tabs = {}
         self.initialized = False
-        self.start_spinner()
-        logger.debug("initialized plugin")
+        logger.debug("plugin loaded by host")
 
     def get_option(self, name):
         return self.vim.vars.get('nvim_mysql#{}'.format(name), OPTION_DEFAULTS[name])
@@ -774,7 +773,8 @@ class MySQL(object):
 
     @pynvim.autocmd('TabClosed', sync=True)
     def cleanup_tabs_on_tabclosed(self):
-        self.cleanup_tabs()
+        if self.initialized:
+            self.cleanup_tabs()
 
     def cleanup_tabs(self):
         logger.debug("number of open tabs: {}".format(len(self.vim.tabpages)))
@@ -787,25 +787,28 @@ class MySQL(object):
     @pynvim.autocmd('WinEnter', sync=True)
     def auto_close_aux_windows_on_winenter(self):
         """Close remaining windows in tab when all are disposable."""
-        def closeable(window):
-            auto_close_results = bool(self.get_option('auto_close_results'))
-            is_results_window = window.buffer == current_tab.results_buffer
-            is_tree_window = window.buffer == current_tab.tree_buffer
-            return (auto_close_results and is_results_window) or is_tree_window
+        if self.initialized:
+            def closeable(window):
+                auto_close_results = bool(self.get_option('auto_close_results'))
+                is_results_window = window.buffer == current_tab.results_buffer
+                is_tree_window = window.buffer == current_tab.tree_buffer
+                return (auto_close_results and is_results_window) or is_tree_window
 
-        tabpage = self.vim.current.tabpage
-        current_tab = self.tabs.get(tabpage, None)
-        if current_tab is not None:
-            if all(closeable(w) for w in tabpage.windows):
-                for _ in range(len(tabpage.windows)):
-                    self.vim.command('q')
+            tabpage = self.vim.current.tabpage
+            current_tab = self.tabs.get(tabpage, None)
+            if current_tab is not None:
+                if all(closeable(w) for w in tabpage.windows):
+                    for _ in range(len(tabpage.windows)):
+                        self.vim.command('q')
 
-                # We have to call this manually because the TabClosed
-                # autocommand doesn't appear to be called when using
-                # vim.command.
-                self.cleanup_tabs()
+                    # We have to call this manually because the TabClosed
+                    # autocommand doesn't appear to be called when using
+                    # vim.command.
+                    self.cleanup_tabs()
 
     def _initialize(self):
+        logger.debug("initializing plugin")
+
         self.initialized = True
         tabline_file = os.path.join(os.path.dirname(__file__), 'tabline.vim')
         self.vim.command('source {}'.format(tabline_file))
@@ -814,6 +817,10 @@ class MySQL(object):
         self.vim.command('set completefunc=MySQLComplete')
 
         self.refresh_tabline()
+        self.start_spinner()
+
+        logger.debug("plugin initialized")
+
 
     def refresh_tabline(self, spinner_char=None):
         if spinner_char:
