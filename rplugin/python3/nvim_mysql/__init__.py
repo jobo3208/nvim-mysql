@@ -591,6 +591,11 @@ class MySQL(object):
         """Select a sampling of rows from the table under the cursor."""
         self._run_query_on_table_under_cursor("select * from {} limit 100")
 
+    @pynvim.command('MySQLSelectAllFromTableUnderCursor', sync=False)
+    def select_all_from_table_under_cursor(self):
+        """Select all rows from the table under the cursor."""
+        self._run_query_on_table_under_cursor("select * from {}")
+
     @pynvim.command('MySQLCountTableUnderCursor', sync=False)
     def count_table_under_cursor(self):
         """Select count(*) from the table under the cursor."""

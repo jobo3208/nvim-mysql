@@ -32,6 +32,7 @@ nnoremap <Leader>c :MySQLCountTableUnderCursor<CR>
 nnoremap <Leader>d :MySQLDescribeTableUnderCursor<CR>
 nnoremap <Leader>i :MySQLShowIndexesFromTableUnderCursor<CR>
 nnoremap <Leader>s :MySQLSampleTableUnderCursor<CR>
+nnoremap <Leader>S :MySQLSelectAllFromTableUnderCursor<CR>
 
 " nvim-mysql options
 
