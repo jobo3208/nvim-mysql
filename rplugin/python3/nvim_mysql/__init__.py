@@ -55,6 +55,33 @@ class NvimMySQLError(Exception):
     pass
 
 
+def prepend_type_hints_to_header(header, types):
+    for i, t in enumerate(types):
+        if t in NUMERIC_TYPES:
+            header[i] = '#' + header[i]
+        elif t in DATE_TYPES:
+            header[i] = '@' + header[i]
+
+
+def display_value(v):
+    """Return the value to display for one particular cell/value."""
+    if v is None:
+        v = u'NULL'
+    elif isinstance(v, bytes):
+        try:
+            v = v.decode('utf-8')
+            v = ' '.join(v.splitlines())
+        except UnicodeDecodeError:
+            if six.PY3:
+                v = '0x' + v.hex()
+            else:
+                v = '0x' + v.encode('hex')
+    else:
+        v = six.text_type(v)
+        v = ' '.join(v.splitlines())
+    return v
+
+
 def results_to_table(header, rows, types=None):
     """Format query result set as an ASCII table.
 
@@ -65,29 +92,7 @@ def results_to_table(header, rows, types=None):
     """
     header = header[:]
     if types:
-        for i, t in enumerate(types):
-            if t in NUMERIC_TYPES:
-                header[i] = '#' + header[i]
-            elif t in DATE_TYPES:
-                header[i] = '@' + header[i]
-
-    def display_value(v):
-        # Return the value to display for one particular cell/value.
-        if v is None:
-            v = u'NULL'
-        elif isinstance(v, bytes):
-            try:
-                v = v.decode('utf-8')
-                v = ' '.join(v.splitlines())
-            except UnicodeDecodeError:
-                if six.PY3:
-                    v = '0x' + v.hex()
-                else:
-                    v = '0x' + v.encode('hex')
-        else:
-            v = six.text_type(v)
-            v = ' '.join(v.splitlines())
-        return v
+        prepend_type_hints_to_header(header, types)
 
     col_lengths = [max([len(display_value(r)) for r in col]) for col in zip(header, *rows)]
 
@@ -105,6 +110,38 @@ def results_to_table(header, rows, types=None):
     ] + [table_row(r) for r in rows] + [
         horizontal_bar
     ]
+
+
+def results_to_vertical(header, rows, types=None):
+    """Format query result set as a series of field: value lines.
+
+    Each row will span len(row) lines.
+
+    If a list of field types is provided (from cursor.description), type hints
+    will be added to the headers.
+
+    Return a list of strings.
+    """
+    header = header[:]
+    if types:
+        prepend_type_hints_to_header(header, types)
+
+    header_lengths = [len(h) for h in header]
+    max_header_length = max(header_lengths)
+    header_strs = ['{{:>{}}}'.format(max_header_length + 1).format(header[i]) for i in range(len(header))]
+
+    output = []
+    for i, row in enumerate(rows, 1):
+        if len(rows) > 1:
+            output.append('***** row {} *****'.format(i))
+
+        for j, v in enumerate(row):
+            output.append('{}: {}'.format(header_strs[j], display_value(v)))
+
+        if len(rows) > 1 and i < len(rows):
+            output.append('')
+
+    return output
 
 
 def results_to_csv(header, rows):
@@ -144,6 +181,8 @@ def format_results(results, format_='table', metadata=None):
             lines = results_to_csv(results['header'], results['rows'])
         elif format_ == 'raw_column':
             lines = '\n'.join([str(r[0]) for r in results['rows']]).splitlines()
+        elif format_ == 'vertical':
+            lines = results_to_vertical(results['header'], results['rows'], results['types'])
         else:
             raise ValueError("Invalid results format '{}'".format(format_))
     elif results['type'] == 'write':
@@ -216,6 +255,7 @@ class MySQLTab(object):
         self.vim.command("nnoremap <buffer> <Leader>c :MySQLShowResults csv<CR>")
         self.vim.command("nnoremap <buffer> <Leader>1 :MySQLShowResults raw_column<CR>")
         self.vim.command("nnoremap <buffer> <Leader>t :MySQLShowResults table<CR>")
+        self.vim.command("nnoremap <buffer> <Leader>G :MySQLShowResults vertical<CR>")
         self.vim.command("nnoremap <buffer> <Leader>f :MySQLFreezeResultsHeader<CR>")
 
         # Switch back
@@ -670,7 +710,7 @@ class MySQL(object):
 
         if len(args) > 0:
             format_ = args[0]
-            if format_ not in ['table', 'csv', 'raw_column']:
+            if format_ not in ['table', 'csv', 'raw_column', 'vertical']:
                 raise NvimMySQLError("Invalid results format '{}'".format(format_))
         else:
             format_ = 'table'
