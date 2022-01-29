@@ -46,6 +46,7 @@ OPTION_DEFAULTS = {
     'aliases': None,
     'auto_close_results': 0,
     'aux_window_pref': 'results',
+    'use_spinner': 1,
 }
 
 SPINNER_CHARS = u"⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
@@ -862,7 +863,8 @@ class MySQL(object):
         self.vim.command('set completefunc=MySQLComplete')
 
         self.refresh_tabline()
-        self.start_spinner()
+        if self.get_option('use_spinner'):
+            self.start_spinner()
 
         logger.debug("plugin initialized")
 

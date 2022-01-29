@@ -46,3 +46,6 @@ let g:nvim_mysql#auto_close_results = 1
 " aux_window_pref: which aux window (results or tree) should take up full
 " space?
 let g:nvim_mysql#aux_window_pref = 'results'
+
+" use_spinner: when a query is running, display an animated spinner
+let g:nvim_mysql#use_spinner = 1

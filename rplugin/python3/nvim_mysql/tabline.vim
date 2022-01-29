@@ -46,7 +46,9 @@ function MySQLTabLabel(n)
   if server != ""
     let name .= " (" . server
     if status_flag == "e"
-        let status_flag = g:nvim_mysql#spinner_char
+        if g:nvim_mysql#use_spinner
+            let status_flag = g:nvim_mysql#spinner_char
+        endif
     endif
     if status_flag != ""
       let name .= " [" . status_flag . "]"
