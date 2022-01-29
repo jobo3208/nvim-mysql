@@ -427,7 +427,22 @@ class MySQLTab(object):
         self.execute_queries([query], False)
 
     def complete(self, findstart, base):
-        return nvim_mysql.autocomplete.complete(findstart, base, self.vim, self.conn.cursor())
+        create_new_conn = self.status['executing']
+        if create_new_conn:
+            logger.debug("query is executing, so creating new connection for autocomplete")
+            db_params = cxnstr.to_dict(self.connection_string)
+            conn = pymysql.connect(use_unicode=True, **db_params)
+        else:
+            logger.debug("using existing connection for autocomplete")
+            conn = self.conn
+
+        result = nvim_mysql.autocomplete.complete(findstart, base, self.vim, conn.cursor())
+
+        if create_new_conn:
+            logger.debug("closing autocomplete connection")
+            conn.close()
+
+        return result
 
     def get_aux_window(self, target):
         target_buffer = self.results_buffer if target == 'results' else self.tree_buffer
@@ -811,10 +826,6 @@ class MySQL(object):
 
         # If this isn't a MySQL tab, ignore.
         if current_tab is None:
-            return 0 if findstart else []
-
-        # If there's a running query, ignore.
-        if current_tab.status['executing']:
             return 0 if findstart else []
 
         return current_tab.complete(findstart, base)
