@@ -3,6 +3,7 @@
 import logging
 import re
 
+import pymysql
 import sqlparse
 
 import nvim_mysql.util
@@ -202,8 +203,13 @@ def _complete(line_segment, base, vim, cursor):
     else:
         # Assume column
         logger.debug("autocomplete: assuming we're completing a COLUMN")
-        cursor.execute("describe {}".format(namespace))
-        words = [r[0] for r in cursor.fetchall() if r[0].lower().startswith(base.lower())]
+        try:
+            cursor.execute("describe {}".format(namespace))
+        except pymysql.err.DatabaseError:
+            vim.err_write("Unknown database or table: {}\n".format(namespace))
+            words = []
+        else:
+            words = [r[0] for r in cursor.fetchall() if r[0].lower().startswith(base.lower())]
 
     # Wrap each suggestion in backticks if necessary.
     words = ['`{}`'.format(w) if not QUOTING_EXEMPT_IDENTIFIER.match(w) else w for w in words]
