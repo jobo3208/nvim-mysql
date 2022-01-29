@@ -293,6 +293,10 @@ class MySQLTab(object):
         self.server_name = server_name
         self.tabpage.vars['MySQLServer'] = server_name
 
+        self.tree = Tree(self)
+        self.tree.refresh_data()
+        self.tree_buffer[:] = self.tree.render()
+
     def update_status(self, **kwargs):
         """Set one or more status flags for this tab.
 
