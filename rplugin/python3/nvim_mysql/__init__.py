@@ -802,6 +802,8 @@ class MySQL(object):
 
     @pynvim.function('MySQLComplete', sync=True)
     def complete(self, args):
+        findstart, base = args
+
         if not self.initialized:
             raise NvimMySQLError("Use MySQLConnect to connect to a database first")
 
@@ -809,13 +811,13 @@ class MySQL(object):
 
         # If this isn't a MySQL tab, ignore.
         if current_tab is None:
-            return []
+            return 0 if findstart else []
 
         # If there's a running query, ignore.
         if current_tab.status['executing']:
-            return []
+            return 0 if findstart else []
 
-        return current_tab.complete(*args)
+        return current_tab.complete(findstart, base)
 
     @pynvim.autocmd('TabClosed', sync=True)
     def cleanup_tabs_on_tabclosed(self):
