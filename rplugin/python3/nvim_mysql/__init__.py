@@ -252,7 +252,7 @@ class MySQLTab(object):
         self.vim.command("nnoremap <buffer> <S-Left> zH")
         self.vim.command("nnoremap <buffer> <S-Right> zL")
         # close window and go to previous
-        self.vim.command("nnoremap <buffer> q :let nr = winnr() <Bar> :wincmd p <Bar> :exe nr . \"wincmd c\"<CR>")
+        self.vim.command("nnoremap <buffer> <silent> q :let nr = winnr() <Bar> :wincmd p <Bar> :exe nr . \"wincmd c\"<CR>")
         self.vim.command("nnoremap <buffer> <Leader>c :MySQLShowResults csv<CR>")
         self.vim.command("nnoremap <buffer> <Leader>1 :MySQLShowResults raw_column<CR>")
         self.vim.command("nnoremap <buffer> <Leader>t :MySQLShowResults table<CR>")
@@ -276,7 +276,7 @@ class MySQLTab(object):
         self.vim.command("b! {}".format(tree_buffer.number))
         self.vim.command("setl buftype=nofile bufhidden=hide nowrap nonu noswapfile")
         self.vim.command("nnoremap <buffer> <Space> :MySQLTreeToggleDatabase<CR>")
-        self.vim.command("nnoremap <buffer> q :let nr = winnr() <Bar> :wincmd p <Bar> :exe nr . \"wincmd c\"<CR>")
+        self.vim.command("nnoremap <buffer> <silent> q :let nr = winnr() <Bar> :wincmd p <Bar> :exe nr . \"wincmd c\"<CR>")
         self.vim.command("syn match Directory /^[^ ].*/")
 
         # Switch back
