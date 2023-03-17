@@ -834,12 +834,12 @@ class MySQL(object):
 
         return current_tab.complete(findstart, base)
 
-    @pynvim.autocmd('TabClosed', sync=True)
-    def cleanup_tabs_on_tabclosed(self):
+    @pynvim.function('MySQLCleanupTabs', sync=True)
+    def cleanup_tabs(self, args):
         if self.initialized:
-            self.cleanup_tabs()
+            self._cleanup_tabs()
 
-    def cleanup_tabs(self):
+    def _cleanup_tabs(self):
         logger.debug("number of open tabs: {}".format(len(self.vim.tabpages)))
         for nvim_tab, mysql_tab in list(self.tabs.items()):
             if nvim_tab not in self.vim.tabpages:
@@ -847,9 +847,8 @@ class MySQL(object):
                 mysql_tab.close()
                 del self.tabs[nvim_tab]
 
-    @pynvim.autocmd('WinEnter', sync=True)
-    def auto_close_aux_windows_on_winenter(self):
-        """Close remaining windows in tab when all are disposable."""
+    @pynvim.function('MySQLAutoCloseAuxWindows', sync=True)
+    def auto_close_aux_windows(self, args):
         if self.initialized:
             def closeable(window):
                 auto_close_results = bool(self.get_option('auto_close_results'))
@@ -867,7 +866,7 @@ class MySQL(object):
                     # We have to call this manually because the TabClosed
                     # autocommand doesn't appear to be called when using
                     # vim.command.
-                    self.cleanup_tabs()
+                    self._cleanup_tabs()
 
     def _initialize(self):
         logger.debug("initializing plugin")
@@ -878,6 +877,10 @@ class MySQL(object):
 
         # Set up autocomplete
         self.vim.command('set completefunc=MySQLComplete')
+
+        # Set up autocommands
+        self.vim.command('autocmd TabClosed * call MySQLCleanupTabs()')
+        self.vim.command('autocmd WinEnter * call MySQLAutoCloseAuxWindows()')
 
         self.refresh_tabline()
         if self.get_option('use_spinner'):
