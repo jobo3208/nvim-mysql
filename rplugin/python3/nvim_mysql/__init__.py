@@ -646,6 +646,11 @@ class MySQL(object):
         """Show indexes from the table under the cursor."""
         self._run_query_on_table_under_cursor("show indexes from {}")
 
+    @pynvim.command('MySQLShowCreateTableFromTableUnderCursor', sync=False)
+    def show_create_table_from_table_under_cursor(self):
+        """Show create table from the table under the cursor."""
+        self._run_query_on_table_under_cursor("show create table {}")
+
     @pynvim.command('MySQLSampleTableUnderCursor', sync=False)
     def sample_table_under_cursor(self):
         """Select a sampling of rows from the table under the cursor."""
