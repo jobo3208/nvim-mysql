@@ -49,11 +49,50 @@ OPTION_DEFAULTS = {
     'use_spinner': 1,
 }
 
+KEYMAPS = {
+    'MySQLExecQueryUnderCursor': {'buffers': ['query'], 'mode': 'n', 'key': '<leader>x'},
+    'MySQLExecQueriesInRange': {'buffers': ['query'], 'mode': 'v', 'key': '<leader>x'},
+    'MySQLCountTableUnderCursor': {'buffers': ['query', 'tree'], 'mode': 'n', 'key': '<leader>c'},
+    'MySQLShowCreateTableFromTableUnderCursor': {'buffers': ['query', 'tree'], 'mode': 'n', 'key': '<leader>C'},
+    'MySQLDescribeTableUnderCursor': {'buffers': ['query', 'tree'], 'mode': 'n', 'key': '<leader>d'},
+    'MySQLShowIndexesFromTableUnderCursor': {'buffers': ['query', 'tree'], 'mode': 'n', 'key': '<leader>i'},
+    'MySQLSampleTableUnderCursor': {'buffers': ['query', 'tree'], 'mode': 'n', 'key': '<leader>s'},
+    'MySQLSelectAllFromTableUnderCursor': {'buffers': ['query', 'tree'], 'mode': 'n', 'key': '<leader>S'},
+    'MySQLShowResults': {'buffers': ['query', 'results', 'tree'], 'mode': 'n', 'key': 'R'},
+    'MySQLShowTree': {'buffers': ['query', 'results', 'tree'], 'mode': 'n', 'key': 'T'},
+    'MySQLKillQuery': {'buffers': ['query', 'results', 'tree'], 'mode': 'n', 'key': 'K'},
+
+    'MySQLShowResults csv': {'buffers': ['results'], 'mode': 'n', 'key': '<leader>c'},
+    'MySQLShowResults raw_column': {'buffers': ['results'], 'mode': 'n', 'key': '<leader>1'},
+    'MySQLShowResults table': {'buffers': ['results'], 'mode': 'n', 'key': '<leader>t'},
+    'MySQLShowResults vertical': {'buffers': ['results'], 'mode': 'n', 'key': '<leader>G'},
+    'MySQLFreezeResultsHeader': {'buffers': ['results'], 'mode': 'n', 'key': '<leader>f'},
+
+    'MySQLTreeToggleDatabase': {'buffers': ['tree'], 'mode': 'n', 'key': '<space>'},
+}
+
 SPINNER_CHARS = u"⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
 
 class NvimMySQLError(Exception):
     pass
+
+
+def render_map_command(command_name, vim=None):
+    """
+    >>> render_map_command('MySQLKillQuery')
+    'nnoremap <buffer> K :MySQLKillQuery<cr>'
+    """
+    keymap_data = KEYMAPS[command_name].copy()
+    if vim:
+        user_keymaps = vim.vars.get('nvim_mysql#keymaps')
+        if user_keymaps and command_name in user_keymaps:
+            keymap_data['key'] = user_keymaps[command_name]
+    return "{mode}noremap <buffer> {key} :{command_name}<cr>".format(command_name=command_name, **keymap_data)
+
+
+def render_map_commands_for_buffer_type(buffer_type, vim=None):
+    return [render_map_command(c, vim) for c, k in KEYMAPS.items() if buffer_type in k['buffers']]
 
 
 def prepend_type_hints_to_header(header, types):
@@ -253,11 +292,8 @@ class MySQLTab(object):
         self.vim.command("nnoremap <buffer> <S-Right> zL")
         # close window and go to previous
         self.vim.command("nnoremap <buffer> <silent> q :let nr = winnr() <Bar> :wincmd p <Bar> :exe nr . \"wincmd c\"<CR>")
-        self.vim.command("nnoremap <buffer> <Leader>c :MySQLShowResults csv<CR>")
-        self.vim.command("nnoremap <buffer> <Leader>1 :MySQLShowResults raw_column<CR>")
-        self.vim.command("nnoremap <buffer> <Leader>t :MySQLShowResults table<CR>")
-        self.vim.command("nnoremap <buffer> <Leader>G :MySQLShowResults vertical<CR>")
-        self.vim.command("nnoremap <buffer> <Leader>f :MySQLFreezeResultsHeader<CR>")
+        for map_command in render_map_commands_for_buffer_type('results', self.vim):
+            self.vim.command(map_command)
 
         # Switch back
         self.vim.command("b! {}".format(cur_buf.number))
@@ -275,8 +311,9 @@ class MySQLTab(object):
         tree_buffer = list(self.vim.buffers)[-1]
         self.vim.command("b! {}".format(tree_buffer.number))
         self.vim.command("setl buftype=nofile bufhidden=hide nowrap nonu noswapfile")
-        self.vim.command("nnoremap <buffer> <Space> :MySQLTreeToggleDatabase<CR>")
         self.vim.command("nnoremap <buffer> <silent> q :let nr = winnr() <Bar> :wincmd p <Bar> :exe nr . \"wincmd c\"<CR>")
+        for map_command in render_map_commands_for_buffer_type('tree', self.vim):
+            self.vim.command(map_command)
         self.vim.command("syn match Directory /^[^ ].*/")
 
         # Switch back
@@ -873,6 +910,12 @@ class MySQL(object):
                     # vim.command.
                     self._cleanup_tabs()
 
+    @pynvim.function('MySQLInitializeQueryBuffer', sync=True)
+    def initialize_query_buffer(self, args):
+        self.vim.command('setlocal completefunc=MySQLComplete')
+        for map_command in render_map_commands_for_buffer_type('query', self.vim):
+            self.vim.command(map_command)
+
     def _initialize(self):
         logger.debug("initializing plugin")
 
@@ -880,12 +923,18 @@ class MySQL(object):
         tabline_file = os.path.join(os.path.dirname(__file__), 'tabline.vim')
         self.vim.command('source {}'.format(tabline_file))
 
-        # Set up autocomplete
-        self.vim.command('set completefunc=MySQLComplete')
+        # Initialize all existing SQL buffers
+        cur_buf = self.vim.current.buffer
+        for buffer in self.vim.buffers:
+            if buffer.options.get('filetype') in ['sql', 'mysql']:
+                self.vim.command("buffer! {}".format(buffer.number))
+                self.vim.command("call MySQLInitializeQueryBuffer()")
+        self.vim.command("buffer! {}".format(cur_buf.number))
 
         # Set up autocommands
         self.vim.command('autocmd TabClosed * call MySQLCleanupTabs()')
         self.vim.command('autocmd WinEnter * call MySQLAutoCloseAuxWindows()')
+        self.vim.command('autocmd FileType sql,mysql call MySQLInitializeQueryBuffer()')
 
         self.refresh_tabline()
         if self.get_option('use_spinner'):

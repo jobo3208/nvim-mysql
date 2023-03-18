@@ -22,20 +22,11 @@ set smartcase
 let &runtimepath .= ',' . getcwd()
 let $NVIM_RPLUGIN_MANIFEST = './script/rplugin.vim'
 
-" keybindings
-nnoremap <Leader>x :MySQLExecQueryUnderCursor<CR>
-vnoremap <Leader>x :MySQLExecQueriesInRange<CR>
-nnoremap R :MySQLShowResults<CR>
-nnoremap T :MySQLShowTree<CR>
-nnoremap K :MySQLKillQuery<CR>
-nnoremap <Leader>c :MySQLCountTableUnderCursor<CR>
-nnoremap <Leader>C :MySQLShowCreateTableFromTableUnderCursor<CR>
-nnoremap <Leader>d :MySQLDescribeTableUnderCursor<CR>
-nnoremap <Leader>i :MySQLShowIndexesFromTableUnderCursor<CR>
-nnoremap <Leader>s :MySQLSampleTableUnderCursor<CR>
-nnoremap <Leader>S :MySQLSelectAllFromTableUnderCursor<CR>
-
 " nvim-mysql options
+
+" keymaps: override default keymaps. map from command -> key(s). see KEYMAPS
+" dict in __init__.py for possible commands.
+let g:nvim_mysql#keymaps = {}
 
 " aliases: map from alias -> connection string
 let g:nvim_mysql#aliases = {}
