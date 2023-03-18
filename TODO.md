@@ -1,8 +1,8 @@
 # Core
 
-  - Make keybindings customizable
   - Reconnect if connection is lost
 
+  - ~~Make keybindings customizable~~
   - ~~Support connection strings~~
   - ~~Allow connection presets in vimrc~~
   
@@ -10,10 +10,10 @@
 
   - Support Home and End keys in autocomplete menu
   - Shortcuts (e.g. copy a table) (maybe better implemented as snippets?)
-  - When autocompleting a name with spaces in it, wrap in backticks
   - Query log
   - Add more objects to tree view (views, functions, triggers, etc.)
 
+  - ~~When autocompleting a name with spaces in it, wrap in backticks~~
   - ~~Raw view of a single data point~~
   - ~~Database tree view~~
   - ~~Allow running a series of queries~~
@@ -43,11 +43,11 @@
 
 # Bugs
 
-  - Keybindings should be limited to MySQL-connected buffers
   - Visual selection is lost if MySQLShowResults is called during
   - Tree view: make unmodifiable by user (but obviously *we* need to be
     able to modify it)
 
+  - ~~Keybindings should be limited to MySQL-connected buffers~~
   - ~~Tree view: infer database from position in tree when doing a describe,
     count, sample, etc. on a table~~
   - ~~When closing aux window, go back to previous window~~
