@@ -78,6 +78,31 @@ class NvimMySQLError(Exception):
     pass
 
 
+def _reconnect_on_failure(db, f, *args, **kwargs):
+    """Run f(*args, **kwargs). If the call fails due to the connection having
+    been lost, reconnect to db, then try again."""
+    try:
+        return f(*args, **kwargs)
+    except pymysql.err.OperationalError as e:
+        if e.args[0] == 2013:
+            logger.warning("disconnected! trying to reconnect...")
+            db.connect()
+            logger.warning("successfully reconnected!")
+            return f(*args, **kwargs)
+        else:
+            raise
+
+
+class ReconnectingCursor(pymysql.cursors.Cursor):
+    """A cursor whose execute and executemany methods automatically try to
+    reconnect to the db if the connection has been lost."""
+    def execute(self, *args, **kwargs):
+        return _reconnect_on_failure(self.connection, super(ReconnectingCursor, self).execute, *args, **kwargs)
+
+    def executemany(self, *args, **kwargs):
+        return _reconnect_on_failure(self.connection, super(ReconnectingCursor, self).executemany, *args, **kwargs)
+
+
 def render_map_command(command_name, vim=None):
     """
     >>> render_map_command('MySQLKillQuery')
@@ -577,7 +602,7 @@ class MySQL(object):
         if server_name is None:
             server_name = db_params['host']
         logger.debug("connecting to {}".format(connection_string))
-        conn = pymysql.connect(use_unicode=True, **db_params)
+        conn = pymysql.connect(use_unicode=True, cursorclass=ReconnectingCursor, **db_params)
         conn.autocommit(True)
         logger.debug("connection succeeded")
 
