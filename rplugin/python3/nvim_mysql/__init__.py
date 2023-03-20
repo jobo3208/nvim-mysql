@@ -428,7 +428,7 @@ class MySQLTab(object):
 
             if combine_results:
                 # for "write" queries, add to count
-                if not cursor.description:
+                if not query_result['description']:
                     self.results['count'] += query_result['rowcount']
                 self.results['warnings'].extend(query_result['warnings'])
             else:
