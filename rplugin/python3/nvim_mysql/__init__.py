@@ -84,7 +84,7 @@ def _reconnect_on_failure(db, f, *args, **kwargs):
     try:
         return f(*args, **kwargs)
     except pymysql.err.OperationalError as e:
-        if e.args[0] == 2013:
+        if e.args[0] in [2006, 2013]:
             logger.warning("disconnected! trying to reconnect...")
             db.connect()
             logger.warning("successfully reconnected!")
